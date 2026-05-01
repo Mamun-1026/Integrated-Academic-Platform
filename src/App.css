@@ -1,0 +1,406 @@
+/* =========================
+   BASE
+========================= */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+/* =========================
+   LOGIN (UNCHANGED)
+========================= */
+.login {
+  width: 400px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #396682, #203d4c);
+}
+
+.log {
+  color: red;
+  font-size: 25px;
+  font-weight: 900;
+  margin-bottom: 15px;
+}
+
+.log-btn {
+  background-color: red;
+  margin-top: 20px;
+  width: 100%;
+}
+
+/* =========================
+   LOGIN PAGE BACKGROUND (FIXED CLEAN)
+========================= */
+.login-page {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+
+  background: linear-gradient(135deg, #fff5f5, #ffecec, #ffffff);
+}
+
+/* background overlay (ONLY ONCE, FIXED) */
+.login-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(220, 53, 69, 0.12),
+      transparent 40%
+    ),
+    radial-gradient(circle at 80% 70%, rgba(220, 53, 69, 0.1), transparent 45%);
+  z-index: 0;
+}
+
+/* floating bubbles (FIXED duplicate issue removed) */
+.login-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 10% 20%,
+      rgba(220, 53, 69, 0.15) 0 20px,
+      transparent 21px
+    ),
+    radial-gradient(
+      circle at 30% 80%,
+      rgba(220, 53, 69, 0.12) 0 25px,
+      transparent 26px
+    ),
+    radial-gradient(
+      circle at 70% 40%,
+      rgba(220, 53, 69, 0.1) 0 18px,
+      transparent 19px
+    ),
+    radial-gradient(
+      circle at 90% 60%,
+      rgba(220, 53, 69, 0.12) 0 22px,
+      transparent 23px
+    );
+  animation: floatBubbles 18s linear infinite;
+  opacity: 0.7;
+}
+
+/* =========================
+   SECTION BOX (UNCHANGED)
+========================= */
+/* .section-box {
+  background: #fff3f3;
+  border-left: 5px solid #d40000;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+} */
+
+.section-title {
+  color: #c00000;
+  font-weight: 600;
+}
+
+.info-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* =========================
+   LOGIN CARD
+========================= */
+.login-card {
+  width: 380px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(8px);
+}
+
+/* =========================
+   ANIMATION
+========================= */
+@keyframes floatBubbles {
+  0% {
+    transform: translateX(100px);
+  }
+  50% {
+    transform: translateX(-50px) translateY(-20px);
+  }
+  100% {
+    transform: translateX(-200px);
+  }
+}
+
+/* =========================
+   DARK MODE (FIXED CLEAN)
+========================= */
+body.student-light {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+body.student-dark,
+body.teacher-dark {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+/* =========================
+   CARD DARK MODE
+========================= */
+.student-dark .card,
+.teacher-dark .card {
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+/* =========================
+   BUTTON DARK MODE
+========================= */
+.student-dark .btn,
+.teacher-dark .btn {
+  border-color: #475569;
+}
+
+/* =========================
+   SIDEBAR (FIXED CLEAN - NO DUPLICATE)
+========================= */
+.student-sidebar,
+.teacher-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #fff;
+  color: #000;
+  border-right: 1px solid #ddd;
+  transition: 0.3s;
+}
+
+/* DARK MODE SIDEBAR (ONLY ONE RULE) */
+body.student-dark .student-sidebar,
+body.teacher-dark .teacher-sidebar {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-right: 1px solid #334155;
+}
+
+/* =========================
+   SIDEBAR ITEMS
+========================= */
+.sidebar-item {
+  padding: 10px 12px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: 0.2s;
+}
+
+/* hover */
+.sidebar-item:hover {
+  background: #e2e8f0;
+}
+
+body.student-dark .sidebar-item:hover,
+body.teacher-dark .sidebar-item:hover {
+  background: #334155;
+}
+
+/* active */
+.sidebar-item.active {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* dark text fix */
+body.student-dark .sidebar-item,
+body.teacher-dark .sidebar-item {
+  color: #e2e8f0;
+}
+
+/* =========================
+   GLOBAL TEXT FIX (IMPORTANT)
+========================= */
+
+/* All text inside dark mode readable */
+body.student-dark,
+body.teacher-dark {
+  color: #e2e8f0;
+}
+
+/* paragraphs */
+body.student-dark p,
+body.teacher-dark p {
+  color: #e2e8f0;
+}
+
+/* headings */
+body.student-dark h1,
+body.student-dark h2,
+body.student-dark h3,
+body.teacher-dark h1,
+body.teacher-dark h2,
+body.teacher-dark h3 {
+  color: #f1f5f9;
+}
+
+/* labels / spans */
+body.student-dark span,
+body.teacher-dark span,
+body.student-dark label,
+body.teacher-dark label {
+  color: #e2e8f0;
+}
+
+/* inputs */
+body.student-dark input,
+body.student-dark select,
+body.teacher-dark input,
+body.teacher-dark select {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+
+.student-dark .card,
+.teacher-dark .card {
+  color: #e2e8f0 !important;
+}
+
+.student-dark .form-control,
+.teacher-dark .form-control {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+
+.student-dark .form-label,
+.teacher-dark .form-label {
+  color: #cbd5f5;
+}
+
+.student-dark .form-control,
+.teacher-dark .form-control {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+}
+
+.student-dark .form-label,
+.teacher-dark .form-label {
+  color: #cbd5f5;
+}
+
+.student-dark input::placeholder,
+.teacher-dark input::placeholder {
+  color: #94a3b8;
+}
+
+/*student profile*/
+
+.card {
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.student-dark .card,
+.teacher-dark .card {
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.student-dark .card-header,
+.teacher-dark .card-header {
+  background-color: #dc2626 !important;
+}
+
+.student-dark .bg-light,
+.teacher-dark .bg-light {
+  background-color: #1e293b !important;
+  color: #e2e8f0;
+}
+
+/* ===== DARK MODE TEXT FIX ===== */
+.student-dark .text-muted,
+.teacher-dark .text-muted {
+  color: #cbd5e1 !important; /* soft readable gray */
+}
+
+/* optional stronger fix for headings under titles */
+.student-dark p,
+.teacher-dark p {
+  color: #e2e8f0;
+}
+
+/*quick action teacher*/
+@media (min-width: 992px) {
+  .col-lg-custom {
+    flex: 0 0 20%;
+    max-width: 20%;
+  }
+}
+
+.quick-btn {
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+/*new*/
+/*Dashboard*/
+.stat-card:hover,
+.filter-card:hover,
+.student-card:hover,
+.teacher-card:hover {
+  transform: translateY(-3px);
+  transition: 0.2s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/*Assign course*/
+.teacher-card,
+.course-card {
+  transition: all 0.2s ease;
+}
+
+.teacher-card:hover,
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+/*create student*/
+.form-card {
+  border-radius: 14px;
+}
+
+.form-card .input-group-text {
+  background: #f8f9fa;
+}
+
+.form-card input,
+.form-card select {
+  border-radius: 8px;
+}
+
+.form-card input:focus,
+.form-card select:focus {
+  box-shadow: none;
+  border-color: #0d6efd;
+}

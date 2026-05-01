@@ -1,0 +1,26 @@
+.header {
+  color: #fff !important;
+  background-color: RGBA(
+    var(--bs-dark-rgb),
+    var(--bs-bg-opacity, 1)
+  ) !important;
+
+  width: 100%;
+  padding: 10px;
+}
+
+.slidebar {
+  height: 89.8vh;
+  display: flex;
+}
+
+.dashboard-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+.dashboard-wrapper main {
+  flex-grow: 1;
+  padding: 1rem;
+  background-color: #f8f9fa;
+}
