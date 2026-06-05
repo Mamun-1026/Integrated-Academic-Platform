@@ -36,6 +36,12 @@ const Header = ({ setSelectedTab, userRole }) => {
         ? info.firstName + " " + info.lastName
         : username;
 
+  userRole === "Student"
+    ? info.fullName || username
+    : info.firstName && info.lastName
+      ? info.firstName + " " + info.lastName
+      : username;
+
   const designation = info.designation || "Lecturer";
   const batch = info.batch || "-";
 

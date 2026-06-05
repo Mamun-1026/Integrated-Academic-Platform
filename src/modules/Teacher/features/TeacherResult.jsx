@@ -9,7 +9,9 @@ import {
   FaEdit,
   FaCheckCircle,
   FaTrophy,
+  FaMedal,
 } from "react-icons/fa";
+import { IoIosMedal } from "react-icons/io";
 
 const TeacherResult = ({ teacherId, assignedCourses }) => {
   const [courses, setCourses] = useState(assignedCourses || []);
@@ -57,7 +59,7 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
     });
   };
 
-  // 🏅 TOP 3 RANKING
+  //  TOP 3 RANKING
   const getTop3 = (courseId) => {
     const courseResults = results[courseId] || [];
 
@@ -163,7 +165,7 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
     <div className="container mt-4">
       {!selectedCourse ? (
         <>
-          <h3 className="text-center fw-bold text-danger mb-4">
+          <h3 className="text-center fw-bold text-primary mb-4">
             <FaBookOpen className="me-2" />
             My Courses Result Panel
           </h3>
@@ -203,11 +205,11 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
             {selectedCourse.courseName} Results
           </h4>
 
-          {/* 🏅 TOP 3 PODIUM */}
+          {/*  TOP 3 PODIUM */}
           <div className="row text-center mb-4">
             {getTop3(selectedCourse.courseId).map((s, i) => {
               const colors = ["warning", "secondary", "dark"];
-              const medals = ["🥇", "🥈", "🥉"];
+              const medals = ["<FaMedal />", "<FaMedal />", "<IoIosMedal />"];
 
               return (
                 <div key={s.studentId} className="col-md-4">

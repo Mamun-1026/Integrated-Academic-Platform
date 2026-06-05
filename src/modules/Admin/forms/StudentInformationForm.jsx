@@ -83,7 +83,6 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
       setInfo(data);
     }
 
-    // ✅ ADD THIS PART
     const img = localStorage.getItem("profileImage_" + studentId);
     if (img) {
       setInfo((prev) => ({

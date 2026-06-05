@@ -24,6 +24,7 @@ const Sidebar = ({ selectedTab, setSelectedTab, userRole, darkMode }) => {
           "Assignment/Materials",
           "Result/Marks",
           "Leave/Request",
+          "Class Routine",
           "Notice/Announcement",
           "Password Change",
         ]
@@ -41,7 +42,6 @@ const Sidebar = ({ selectedTab, setSelectedTab, userRole, darkMode }) => {
           "Password Change",
         ];
 
-  // ⭐ ICON MAP (clean + scalable)
   const iconMap = {
     Home: FaHome,
     Profile: FaUser,

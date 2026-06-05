@@ -82,7 +82,7 @@ const TeacherLeave = ({ teacherId }) => {
       id: Date.now(),
       teacherId: String(teacherId),
 
-      // ✅ SNAPSHOT (IMPORTANT)
+      //  SNAPSHOT (IMPORTANT)
       teacherName: teacher.teacherName || teacher.name || "Unknown Teacher",
       department: teacher.department || "N/A",
       designation: teacher.designation || "Lecturer",
@@ -128,11 +128,13 @@ const TeacherLeave = ({ teacherId }) => {
     <div className="container mt-4">
       {/* HEADER */}
       <div className="mb-4">
-        <h2 className="fw-bold text-primary">
+        <h2 className="text-center fw-bold text-primary">
           <FaCalendarAlt className="me-2" />
           Leave Management
         </h2>
-        <p className="text-muted">Apply and track your leave requests easily</p>
+        <p className="text-center text-muted">
+          Apply and track your leave requests easily
+        </p>
       </div>
 
       {/* STATS */}

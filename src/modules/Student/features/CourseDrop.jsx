@@ -8,6 +8,7 @@ import {
   FaHistory,
   FaClock,
 } from "react-icons/fa";
+import { IoAlertCircleSharp, IoCheckmarkDoneCircle } from "react-icons/io5";
 
 const CourseDrop = ({ studentData }) => {
   const { userId } = studentData || {};
@@ -17,7 +18,7 @@ const CourseDrop = ({ studentData }) => {
   const [history, setHistory] = useState([]);
   const [undoStack, setUndoStack] = useState(null);
 
-  // 📥 LOAD ONLY THIS STUDENT'S ENROLLED COURSES
+  //  LOAD ONLY THIS STUDENT'S ENROLLED COURSES
   useEffect(() => {
     if (!userId) return;
 
@@ -29,24 +30,24 @@ const CourseDrop = ({ studentData }) => {
       localStorage.getItem(`dropHistory_${userId}`) || "[]",
     );
 
-    // ✅ SAFETY FILTER (ONLY VALID ENROLLED COURSES)
+    // SAFETY FILTER (ONLY VALID ENROLLED COURSES)
     const validCourses = stored.filter((c) => c && c.courseId && c.courseName);
 
     setCourses(validCourses);
     setHistory(dropHistory);
   }, [userId]);
 
-  // ⛔ DEADLINE CHECK
+  //  DEADLINE CHECK
   const isDropAllowed = () => {
     const deadline = localStorage.getItem("dropDeadline");
     if (!deadline) return true;
     return new Date() < new Date(deadline);
   };
 
-  // ❌ DROP COURSE (ONLY THIS STUDENT)
+  //  DROP COURSE (ONLY THIS STUDENT)
   const handleDrop = (course) => {
     if (!isDropAllowed()) {
-      alert("⛔ Drop deadline expired!");
+      alert("<IoAlertCircleSharp /> Drop deadline expired!");
       return;
     }
 
@@ -57,7 +58,7 @@ const CourseDrop = ({ studentData }) => {
 
     localStorage.setItem(`studentCourses_${userId}`, JSON.stringify(updated));
 
-    // 📊 HISTORY (this student only)
+    //  HISTORY (this student only)
     const newHistory = [
       {
         ...course,
@@ -70,7 +71,7 @@ const CourseDrop = ({ studentData }) => {
 
     localStorage.setItem(`dropHistory_${userId}`, JSON.stringify(newHistory));
 
-    // 🧾 ADMIN REQUEST LOG (optional workflow)
+    //  ADMIN REQUEST LOG (optional workflow)
     const adminReq = JSON.parse(
       localStorage.getItem("dropRequests_admin") || "[]",
     );
@@ -84,7 +85,7 @@ const CourseDrop = ({ studentData }) => {
 
     localStorage.setItem("dropRequests_admin", JSON.stringify(adminReq));
 
-    // ⏪ undo support
+    //  undo support
     setUndoStack(course);
 
     setTimeout(() => {
@@ -94,7 +95,7 @@ const CourseDrop = ({ studentData }) => {
     setSelectedCourse(null);
   };
 
-  // ⏪ UNDO DROP
+  //  UNDO DROP
   const handleUndo = () => {
     if (!undoStack) return;
 
@@ -106,7 +107,7 @@ const CourseDrop = ({ studentData }) => {
 
     setUndoStack(null);
 
-    alert("✅ Course restored!");
+    alert("<IoCheckmarkDoneCircle /> Course restored!");
   };
 
   return (

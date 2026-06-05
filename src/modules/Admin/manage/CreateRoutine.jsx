@@ -71,8 +71,15 @@ const CreateRoutine = ({ routines, setRoutines }) => {
       room: String(item.room || "").trim(),
 
       courseName: String(item.courseName || "").trim(),
-      courseId: clean(item.courseId),
-
+      // courseId: clean(item.courseId),
+      courseId: clean(
+        item.courseId ||
+          item.courseID ||
+          item.courseid ||
+          item["Course ID"] ||
+          item["course id"] ||
+          item["CourseId"],
+      ),
       createdAt: new Date().toISOString(),
     }));
 
@@ -93,7 +100,7 @@ const CreateRoutine = ({ routines, setRoutines }) => {
     setRoutines(unique);
     localStorage.setItem("routines", JSON.stringify(unique));
 
-    alert(`✅ ${newRoutines.length} routines uploaded successfully!`);
+    alert(` ${newRoutines.length} routines uploaded successfully!`);
 
     setFile(null);
     setPreview([]);

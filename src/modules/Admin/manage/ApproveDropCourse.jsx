@@ -92,7 +92,7 @@ const ApproveDropCourse = () => {
 
   return (
     <div className="container py-4">
-      {/* 🌈 HEADER */}
+      {/*  HEADER */}
       <div className="glass-header mb-4">
         <h3 className="fw-bold mb-1">Drop Course Approval</h3>
         <small>Review, approve or reject student requests</small>
@@ -144,7 +144,7 @@ const ApproveDropCourse = () => {
 
                     <hr />
 
-                    {/* 📘 COURSE */}
+                    {/* COURSE */}
                     <div className="mb-2">
                       <FaBook className="me-2 text-success" />
                       <strong>{r.course.courseName}</strong>
@@ -159,7 +159,7 @@ const ApproveDropCourse = () => {
                       {r.date}
                     </div>
 
-                    {/* 🔘 ACTION */}
+                    {/*  ACTION */}
                     <div className="mt-auto d-flex flex-column gap-2">
                       {r.status === "pending" && (
                         <div className="d-flex gap-2">
@@ -194,7 +194,7 @@ const ApproveDropCourse = () => {
         </div>
       )}
 
-      {/* 🎨 STYLES */}
+      {/*  STYLES */}
       <style>{`
         .glass-header {
           padding: 20px;
@@ -232,7 +232,7 @@ const ApproveDropCourse = () => {
   );
 };
 
-/* 📊 STAT CARD */
+/* STAT CARD */
 const StatCard = ({ title, value, icon }) => {
   return (
     <div className="col-md-3">

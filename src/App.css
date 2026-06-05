@@ -404,3 +404,10 @@ body.teacher-dark select {
   box-shadow: none;
   border-color: #0d6efd;
 }
+
+.university-logo {
+  height: 120px;
+  width: auto;
+  display: block;
+  margin: 0 auto 15px;
+}

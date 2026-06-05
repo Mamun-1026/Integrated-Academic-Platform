@@ -1,6 +1,8 @@
+import "../App.css";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/logo.jpeg";
+import logo from "../assets/cuLogo.jpeg";
+
 import { useEffect } from "react";
 
 const Login = () => {
@@ -20,11 +22,6 @@ const Login = () => {
     const password = userPass.current.value.trim();
     const userRole = role.current.value;
 
-    // //Login page e jeno dark mode na thake — tai login e dhukar shomoy body reset korte hobe
-    // useEffect(() => {
-    //   document.body.classList.remove("student-dark", "student-light");
-    // }, []);
-    // Admin Login
     if (
       username === "admin" &&
       password === "admin" &&
@@ -88,9 +85,6 @@ const Login = () => {
       {/* Header */}
       <div className="container text-center header-section">
         <img src={logo} alt="logo" className="university-logo mb-3" />
-
-        <h1 className="university-title">CITY UNIVERSITY OF BANGLADESH</h1>
-
         <p className="university-subtitle">Student • Teacher • Admin Portal</p>
       </div>
 

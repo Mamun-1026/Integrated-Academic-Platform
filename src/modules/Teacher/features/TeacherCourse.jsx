@@ -108,7 +108,7 @@ const TeacherCourse = ({ assignedCourses, teacherId }) => {
       {/* ================= COURSE LIST ================= */}
       {!selectedCourse ? (
         <>
-          <h3 className="text-center fw-bold text-danger mb-4">
+          <h3 className="text-center fw-bold text-primary mb-4">
             <FaBookOpen className="me-2" />
             My Courses
           </h3>
@@ -156,13 +156,13 @@ const TeacherCourse = ({ assignedCourses, teacherId }) => {
             <FaArrowLeft /> Back
           </button>
 
-          <h3 className="text-primary fw-bold mb-3">
-            📊 {selectedCourse.courseName}
+          <h3 className="align-items-center text-primary fw-bold mb-3">
+            <FaChartBar /> {selectedCourse.courseName}
           </h3>
 
           {/* ⭐ AVG RATING */}
           <div className="alert alert-info">
-            ⭐ Average Rating: <b>{avgRating}</b>
+            <FaStar /> Average Rating: <b>{avgRating}</b>
           </div>
 
           {/* 📊 SIMPLE BAR GRAPH */}
@@ -179,7 +179,9 @@ const TeacherCourse = ({ assignedCourses, teacherId }) => {
 
               return (
                 <div key={star} className="mb-2">
-                  <span>{star} ⭐</span>
+                  <span>
+                    {star} <FaStar />{" "}
+                  </span>
                   <div className="progress">
                     <div
                       className="progress-bar bg-warning"

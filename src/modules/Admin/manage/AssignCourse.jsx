@@ -19,6 +19,7 @@ const AssignCourse = ({
   handleRemoveAssignedCourse,
 }) => {
   const [assignSearch, setAssignSearch] = useState("");
+  const ASSIGNED_KEY = "assignedCourses_global";
   const [, setRefresh] = useState(0);
   useEffect(() => {
     const refresh = () => setRefresh((p) => p + 1);
@@ -29,9 +30,13 @@ const AssignCourse = ({
 
   useEffect(() => {
     if (selectedAssignTeacher) {
-      const key = "teacherCourses_" + selectedAssignTeacher.teacherId;
-      const data = JSON.parse(localStorage.getItem(key) || "[]");
-      setAssignedCourses(data);
+      const global = JSON.parse(localStorage.getItem(ASSIGNED_KEY) || "[]");
+
+      const filtered = global.filter(
+        (a) => a.teacherId === selectedAssignTeacher.teacherId,
+      );
+
+      setAssignedCourses(filtered);
     }
   }, [selectedAssignTeacher, setAssignedCourses]);
 
@@ -148,9 +153,18 @@ const AssignCourse = ({
                   c.courseId.toLowerCase().includes(assignSearch.toLowerCase()),
               )
               .map((c) => {
-                const isAssigned = assignedCourses.some(
+                const global = JSON.parse(
+                  localStorage.getItem(ASSIGNED_KEY) || "[]",
+                );
+
+                const assignedEntry = global.find(
                   (a) => a.courseId === c.courseId,
                 );
+
+                const isAssigned = !!assignedEntry;
+
+                const assignedToThisTeacher =
+                  assignedEntry?.teacherId === selectedAssignTeacher.teacherId;
 
                 return (
                   <div key={c.courseId} className="col-12 col-md-6 col-lg-4">
@@ -176,7 +190,7 @@ const AssignCourse = ({
                         >
                           <FaPlus /> Assign
                         </button>
-                      ) : (
+                      ) : assignedToThisTeacher ? (
                         <button
                           className="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
                           onClick={() =>
@@ -187,6 +201,13 @@ const AssignCourse = ({
                           }
                         >
                           <FaTrash /> Remove
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-secondary btn-sm w-100"
+                          disabled
+                        >
+                          Assigned
                         </button>
                       )}
                     </div>

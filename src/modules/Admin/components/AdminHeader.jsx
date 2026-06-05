@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 const AdminHeader = () => {
-  const navigate = useNavigate(); // ✅ define navigate here
+  const navigate = useNavigate(); //  define navigate here
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");

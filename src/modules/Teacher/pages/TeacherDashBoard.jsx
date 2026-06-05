@@ -9,6 +9,7 @@ import TeacherNotice from "../features/TeacherNotice";
 import TeacherLeave from "../features/TeacherLeave";
 import Header from "../../../components/Header";
 import Sidebar from "../../../components/Sidebar";
+import TeacherRoutine from "../features/TeacherRoutine";
 
 const TeacherDashboard = () => {
   const [selectedTab, setSelectedTab] = useState(
@@ -76,7 +77,7 @@ const TeacherDashboard = () => {
         );
 
       case "Profile":
-        return <TeacherProfile darkMode={darkMode} />;
+        return <TeacherProfile teacherId={teacherId} darkMode={darkMode} />;
 
       case "My Courses":
         return (
@@ -116,6 +117,9 @@ const TeacherDashboard = () => {
             darkMode={darkMode}
           />
         );
+
+      case "Class Routine":
+        return <TeacherRoutine teacherId={teacherId} />;
 
       case "Leave/Request":
         return <TeacherLeave teacherId={teacherId} darkMode={darkMode} />;

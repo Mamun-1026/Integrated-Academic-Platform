@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-
+import { GrFormNextLink } from "react-icons/gr";
+import { IoMdArrowBack } from "react-icons/io";
 const TeacherInformationForm = ({ teacherId, readOnly }) => {
   const [step, setStep] = useState(1);
 
@@ -23,11 +24,13 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
     employmentType: "",
 
     // STEP 3 - ACADEMIC
-    qualification: "",
+    degreeName: "",
     university: "",
-    degree: "",
+    subject: "",
     passingYear: "",
     cgpa: "",
+    teachingExperience: " ",
+    achievements: "",
 
     // STEP 4 - DOCUMENTS
     nidCopy: "",
@@ -35,12 +38,6 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
     resume: "",
     appointmentLetter: "",
     experienceCert: "",
-
-    // STEP 5 - PERMISSIONS
-    canUploadAssignment: true,
-    canMarkAttendance: true,
-    canPublishResult: true,
-    assignedCourses: [],
   });
 
   // LOAD DATA
@@ -168,8 +165,8 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                     <label className="form-label fw-semibold">Full Name</label>
                     <input
                       className="form-control"
-                      name="firstName"
-                      value={info.firstName}
+                      name="fullName"
+                      value={info.fullName}
                       onChange={handleChange}
                       placeholder="Enter full name"
                     />
@@ -429,14 +426,14 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                   {/* Qualification */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
-                      Qualification
+                      Degree Name
                     </label>
                     <input
                       className="form-control"
-                      name="qualificaton"
-                      value={info.qualification}
+                      name="degreeName"
+                      value={info.degreeName}
                       onChange={handleChange}
-                      placeholder="Qualification"
+                      placeholder="eg. BSc in CSE"
                     />
                   </div>
                   {/* Uni */}
@@ -455,14 +452,14 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                   {/* deg */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
-                      Achives Degrees
+                      Subject / Major
                     </label>
                     <input
                       className="form-control"
-                      name="degree"
-                      value={info.degree}
+                      name="subject"
+                      value={info.subject}
                       onChange={handleChange}
-                      placeholder="eg. Ph.D"
+                      placeholder="eg. Computer Science"
                     />
                   </div>
                   {/* year */}
@@ -481,14 +478,38 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                   {/*cg */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
-                      Obtained CGPA
+                      Obtained CGPA / GPA
                     </label>
                     <input
                       className="form-control"
                       name="cgpa"
                       value={info.cgpa}
                       onChange={handleChange}
-                      placeholder="eg. 3.82"
+                      placeholder="eg. 3.75"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">
+                      Teaching Experience (in years)
+                    </label>
+                    <input
+                      className="form-control"
+                      name="teachingExperience"
+                      value={info.teachingExperience}
+                      onChange={handleChange}
+                      placeholder="eg. 2 years"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-semibold">
+                      Achievements / Honors
+                    </label>
+                    <input
+                      className="form-control"
+                      name="achievements"
+                      value={info.achievements}
+                      onChange={handleChange}
+                      placeholder="eg. Best Teacher Award 2020"
                     />
                   </div>
                 </div>
@@ -598,14 +619,14 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
       <div className="d-flex justify-content-between mt-4">
         {step > 1 ? (
           <button className="btn btn-secondary" onClick={prevStep}>
-            ← Back
+            <IoMdArrowBack /> Back
           </button>
         ) : (
           <div />
         )}
         {step < 4 ? (
           <button className="btn btn-primary" onClick={nextStep}>
-            Next →
+            Next <GrFormNextLink />
           </button>
         ) : (
           <button className="btn btn-success" onClick={handleSave}>

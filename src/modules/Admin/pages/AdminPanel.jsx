@@ -124,6 +124,20 @@ const AdminPanel = () => {
   }, []);
 
   useEffect(() => {
+    const loadAssigned = () => {
+      const data = JSON.parse(
+        localStorage.getItem("assignedCourses_global") || "[]",
+      );
+      setAssignedCourses(data);
+    };
+
+    loadAssigned();
+    window.addEventListener("profileUpdate", loadAssigned);
+
+    return () => window.removeEventListener("profileUpdate", loadAssigned);
+  }, []);
+
+  useEffect(() => {
     const allStudents = JSON.parse(localStorage.getItem("students") || "[]");
 
     let pending = [];
@@ -174,46 +188,51 @@ const AdminPanel = () => {
     setTotalIncome(income);
     setApprovedPayments(approved);
   }, [students]);
-
-  useEffect(() => {
-    if (selectedAssignTeacher) {
-      const key = "teacherCourses_" + selectedAssignTeacher.teacherId;
-      const data = JSON.parse(localStorage.getItem(key) || "[]");
-      setAssignedCourses(data);
-    }
-  }, [selectedAssignTeacher]);
+  const ASSIGNED_KEY = "assignedCourses_global";
 
   const handleAssignCourse = (teacherId, course) => {
-    const key = "teacherCourses_" + teacherId;
+    const global = JSON.parse(localStorage.getItem(ASSIGNED_KEY) || "[]");
 
-    const assigned = JSON.parse(localStorage.getItem(key) || "[]");
-
-    const exists = assigned.some((c) => c.courseId === course.courseId);
+    const exists = global.find((a) => a.courseId === course.courseId);
 
     if (exists) {
-      alert("Course already assigned!");
+      alert("This course already assigned!");
       return;
     }
 
-    const updated = [...assigned, course];
+    const updated = [
+      ...global,
+      {
+        teacherId,
+        courseId: course.courseId,
+        courseName: course.courseName,
+      },
+    ];
 
-    localStorage.setItem(key, JSON.stringify(updated));
+    localStorage.setItem(ASSIGNED_KEY, JSON.stringify(updated));
 
-    setAssignedCourses(updated); // ⭐ UI update
+    // IMPORTANT FIX: force sync
+    setTimeout(() => {
+      window.dispatchEvent(new Event("profileUpdate"));
+    }, 0);
 
     alert("Course Assigned!");
   };
 
   const handleRemoveAssignedCourse = (teacherId, courseId) => {
-    const key = "teacherCourses_" + teacherId;
+    const global = JSON.parse(
+      localStorage.getItem("assignedCourses_global") || "[]",
+    );
 
-    const assigned = JSON.parse(localStorage.getItem(key) || "[]");
+    const updated = global.filter(
+      (a) => !(a.teacherId === teacherId && a.courseId === courseId),
+    );
 
-    const updated = assigned.filter((c) => c.courseId !== courseId);
+    localStorage.setItem("assignedCourses_global", JSON.stringify(updated));
 
-    localStorage.setItem(key, JSON.stringify(updated));
-
-    setAssignedCourses(updated); // ⭐ UI update
+    setTimeout(() => {
+      window.dispatchEvent(new Event("profileUpdate"));
+    }, 0);
 
     alert("Course Removed!");
   };

@@ -9,6 +9,7 @@ import {
   FaEye,
   FaTimes,
 } from "react-icons/fa";
+import { GiBookshelf } from "react-icons/gi";
 
 const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -142,7 +143,9 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
   if (!selectedCourse) {
     return (
       <div className="container mt-4">
-        <h4 className="fw-bold text-danger mb-4">📚 Select Course</h4>
+        <h4 className="text-center fw-bold text-primary mb-4">
+          <GiBookshelf /> Select Course
+        </h4>
 
         <div className="row g-3">
           {assignedCourses.map((c) => (
@@ -169,7 +172,7 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center p-3 bg-white shadow-sm rounded-4 mb-3">
         <div>
-          <h5 className="fw-bold text-danger mb-0">
+          <h5 className="fw-bold text-primary mb-0">
             {selectedCourse.courseName}
           </h5>
           <small className="text-muted">{selectedCourse.courseId}</small>
@@ -210,7 +213,7 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
       {/* MATERIALS */}
       {materials.length === 0 ? (
         <div className="text-center p-4 bg-light rounded-4">
-          No materials uploaded yet 🚀
+          No materials uploaded yet....
         </div>
       ) : (
         materials.map((m) => {

@@ -109,8 +109,13 @@ const History = ({
 
                   {openMenu === s.studentId && (
                     <div
-                      className="dropdown-menu show"
-                      style={{ position: "absolute", right: 0, top: "40px" }}
+                      className="dropdown-menu show position-relative"
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "10px",
+                        zIndex: 9999,
+                      }}
                     >
                       <button
                         className="dropdown-item"

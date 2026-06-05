@@ -85,7 +85,7 @@ const Home = ({ setSelectedTab, darkMode, setDarkMode }) => {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: darkMode ? "#121212" : "#f8f9fa",
+        backgroundColor: darkMode ? "#121212" : "#eff6ff",
         color: darkMode ? "#fff" : "#000",
       }}
     >
@@ -93,7 +93,9 @@ const Home = ({ setSelectedTab, darkMode, setDarkMode }) => {
         {/* HEADER */}
         <div
           className="p-3 rounded shadow text-white"
-          style={{ background: "#b30000" }}
+          style={{
+            background: "linear-gradient(135deg,#1e3c72,#2a5298,#4f46e5)",
+          }}
         >
           <div className="d-flex justify-content-between align-items-center">
             <div>
@@ -218,7 +220,7 @@ const Home = ({ setSelectedTab, darkMode, setDarkMode }) => {
                 }
               >
                 <div className="card-body">
-                  <div className="text-danger fs-4 mb-2">{card.icon}</div>
+                  <div className="text-primary fs-4 mb-2">{card.icon}</div>
                   <h6>{card.label}</h6>
                   <h4 className="fw-bold">{card.value}</h4>
                 </div>
@@ -252,7 +254,7 @@ const Home = ({ setSelectedTab, darkMode, setDarkMode }) => {
               ].map(([label, tab], i) => (
                 <div className="col-6 col-md-2 col-lg-custom" key={i}>
                   <button
-                    className="btn btn-outline-danger w-100 py-2 fw-semibold quick-btn"
+                    className="btn btn-outline-primary w-100 py-2 fw-semibold quick-btn"
                     onClick={() => setSelectedTab(tab)}
                   >
                     {label}

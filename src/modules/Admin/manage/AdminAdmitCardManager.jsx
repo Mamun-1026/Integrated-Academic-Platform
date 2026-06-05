@@ -10,7 +10,7 @@ const AdminAdmitCardManager = () => {
     section: "All",
   });
 
-  // 🔥 LOAD DATA
+  // LOAD DATA
   useEffect(() => {
     const loadData = () => {
       const s = JSON.parse(localStorage.getItem("students") || "[]");
@@ -31,7 +31,7 @@ const AdminAdmitCardManager = () => {
     };
   }, []);
 
-  // 🔥 CHECK ELIGIBILITY
+  // CHECK ELIGIBILITY
   const isEligible = (student) => {
     const bills = JSON.parse(
       localStorage.getItem("billHistory_" + student.studentId) || "[]",
@@ -50,7 +50,7 @@ const AdminAdmitCardManager = () => {
     return totalDue === 0;
   };
 
-  // 🔥 FILTER STUDENTS
+  // FILTER STUDENTS
   const getFilteredStudents = () => {
     return students.filter((s) => {
       return (
@@ -62,7 +62,7 @@ const AdminAdmitCardManager = () => {
     });
   };
 
-  // 🔥 GENERATE ADMIT CARDS
+  // GENERATE ADMIT CARDS
   const generateAdmitCards = () => {
     const existing = JSON.parse(localStorage.getItem("admitCards") || "[]");
 
@@ -89,7 +89,7 @@ const AdminAdmitCardManager = () => {
     setAdmitCards(updated);
     localStorage.setItem("admitCards", JSON.stringify(updated));
 
-    // 🔥 notify student panels
+    // notify student panels
     window.dispatchEvent(new Event("storage"));
     window.dispatchEvent(new Event("admitCardsUpdated"));
 
@@ -195,7 +195,7 @@ const AdminAdmitCardManager = () => {
                 {admitCards.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center py-4 text-muted">
-                      🚫 No Admit Cards Generated Yet
+                      No Admit Cards Generated Yet
                     </td>
                   </tr>
                 ) : (

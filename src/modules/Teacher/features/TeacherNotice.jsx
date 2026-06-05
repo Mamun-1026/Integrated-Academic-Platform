@@ -30,20 +30,6 @@ const TeacherNotice = ({
     setNotices(stored);
   }, [selectedCourse, teacherId]);
 
-  // GET TEACHER NAME
-  // const getTeacherName = () => {
-  //   return (
-  //     localStorage.getItem("teacherName_" + teacherId) ||
-  //     localStorage.getItem("teacher_name_" + teacherId) ||
-  //     "Teacher"
-  //   );
-  // };
-
-  // // GET DESIGNATION (DYNAMIC 🔥)
-  // const getTeacherDesignation = () => {
-  //   return teacherDesignation || "Lecturer";
-  // };
-
   // SAVE
   const saveNotices = (updated) => {
     if (!selectedCourse) return;
@@ -112,7 +98,7 @@ const TeacherNotice = ({
     <div className="container mt-4">
       {/* TITLE */}
       <div className="text-center mb-4">
-        <h3 className="fw-bold text-danger">
+        <h3 className="fw-bold text-primary">
           <FaBullhorn className="me-2" />
           Teacher Notice Panel
         </h3>
@@ -208,7 +194,7 @@ const TeacherNotice = ({
                   <div className="card shadow border-0 h-100">
                     <div className="card-body">
                       <div className="d-flex align-items-center mb-2">
-                        <FaBullhorn className="me-2 text-danger" />
+                        <FaBullhorn className="me-2 text-primary" />
                         <h6 className="fw-bold m-0">{n.message}</h6>
                       </div>
 

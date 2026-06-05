@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { FaChalkboardTeacher, FaChartBar } from "react-icons/fa";
 
 const TeacherProfile = ({ teacherId }) => {
   const [info, setInfo] = useState({});
@@ -12,19 +13,18 @@ const TeacherProfile = ({ teacherId }) => {
     const id = teacherId || localStorage.getItem("teacherId");
     if (!id) return;
 
-    // const data = JSON.parse(localStorage.getItem("teacherInfo_" + id) || "{}");
-    let data = {};
-    try {
-      data = JSON.parse(localStorage.getItem("teacherInfo_" + id)) || {};
-    } catch {
-      data = {};
-    }
-    setInfo(data);
+    const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
 
-    // const img =
-    //   data.profilePhoto || localStorage.getItem("teacherProfile_" + id);
+    const found = teachers.find(
+      (t) => String(t.teacherId).trim() === String(id).trim(),
+    );
+
+    setInfo(found || {});
+
     const img =
-      data.profilePhoto || localStorage.getItem("profileImage_" + id) || "";
+      (found && found.profilePhoto) ||
+      localStorage.getItem("profileImage_" + id) ||
+      "";
 
     setProfileImage(img || "/defaultFace.webp");
   }, [teacherId]);
@@ -41,11 +41,6 @@ const TeacherProfile = ({ teacherId }) => {
       const id = teacherId || localStorage.getItem("teacherId");
       if (!id) return;
 
-      // const updated = { ...info, profilePhoto: imageData };
-      // setInfo(updated);
-
-      // localStorage.setItem("teacherInfo_" + id, JSON.stringify(updated));
-      // localStorage.setItem("teacherProfile_" + id, imageData);
       const updated = {
         ...info,
         profilePhoto: imageData,
@@ -100,7 +95,9 @@ const TeacherProfile = ({ teacherId }) => {
       >
         <div className="container d-flex flex-column flex-md-row justify-content-between align-items-center">
           <div>
-            <h2 className="fw-bold">👨‍🏫 Teacher Profile</h2>
+            <h2 className="fw-bold">
+              <FaChalkboardTeacher /> Teacher Profile
+            </h2>
             <p className="mb-0 opacity-75">
               University Faculty Management System
             </p>
@@ -165,7 +162,7 @@ const TeacherProfile = ({ teacherId }) => {
                 background: "linear-gradient(135deg,#ffffff,#eef2ff)",
               }}
             >
-              <h5 className="fw-bold mb-3">📊 Quick Overview</h5>
+              <h5 className="fw-bold mb-3">Quick Overview</h5>
 
               <div className="row g-3">
                 <div className="col-md-6">
@@ -231,15 +228,16 @@ const TeacherProfile = ({ teacherId }) => {
         </Section>
 
         <Section title="Academic Information" color="#22c55e">
-          <Item
-            label="Qualification"
-            value={info.qualification}
-            color="#22c55e"
-          />
+          <Item label="Degree" value={info.degreeName} color="#f59e0b" />
+          <Item label="Subject / Major" value={info.subject} color="#22c55e" />
           <Item label="University" value={info.university} color="#4f46e5" />
-          <Item label="Degree" value={info.degree} color="#f59e0b" />
           <Item label="Passing Year" value={info.passingYear} color="#ef4444" />
           <Item label="CGPA" value={info.cgpa} color="#06b6d4" />
+          <Item
+            label="Teaching Experience"
+            value={info.teachingExperience}
+            color="#8b5cf6"
+          />
         </Section>
 
         {/* DOCUMENTS (CLICKABLE) */}
