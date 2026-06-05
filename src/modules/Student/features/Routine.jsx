@@ -20,7 +20,7 @@ const Routine = () => {
       .toLowerCase()
       .replace(/[-\s]/g, "");
 
-  // ✅ CORRECT TIME FORMATTER (FIXED AM/PM LOGIC)
+  //  CORRECT TIME FORMATTER (FIXED AM/PM LOGIC)
   const formatTime = (time) => {
     if (!time) return "-";
 
@@ -40,7 +40,7 @@ const Routine = () => {
 
       if (isNaN(h)) return t;
 
-      // ✅ REAL FIX: proper 24h → 12h conversion
+      //  REAL FIX: proper 24h → 12h conversion
       const period = h >= 12 ? "PM" : "AM";
 
       let hour12 = h % 12;

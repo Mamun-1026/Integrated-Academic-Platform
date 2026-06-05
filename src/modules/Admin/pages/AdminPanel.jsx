@@ -154,7 +154,7 @@ const AdminPanel = () => {
           bill.paymentHistory.forEach((p, index) => {
             if (p.status === "Pending") {
               pending.push({
-                studentId: s.studentId, // ✅ fix
+                studentId: s.studentId, //  fix
                 studentName: s.name,
                 billName: p.billName,
                 method: p.method,

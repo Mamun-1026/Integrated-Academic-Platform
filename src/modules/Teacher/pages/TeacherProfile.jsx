@@ -6,7 +6,7 @@ const TeacherProfile = ({ teacherId }) => {
   const [profileImage, setProfileImage] = useState("");
   const [showModal, setShowModal] = useState(false);
 
-  // NEW: document preview modal
+  //  document preview modal
   const [docPreview, setDocPreview] = useState(null);
 
   useEffect(() => {

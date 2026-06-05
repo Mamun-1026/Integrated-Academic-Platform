@@ -23,7 +23,7 @@ function StudentDashBoard() {
     semester: "",
   });
 
-  // ✅ GLOBAL THEME STATE
+  //  GLOBAL THEME STATE
   const [darkMode, setDarkMode] = useState(false);
 
   // Load student data

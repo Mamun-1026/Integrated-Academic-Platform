@@ -56,7 +56,7 @@ const TeacherCourse = ({ assignedCourses, teacherId }) => {
 
     const filtered = allFeedback.filter((f) => f.courseId === course.courseId);
 
-    // ⭐ AVG RATING
+    //  AVG RATING
     const ratings = filtered
       .map((f) => Number(f.rating))
       .filter((r) => !isNaN(r));
@@ -76,7 +76,7 @@ const TeacherCourse = ({ assignedCourses, teacherId }) => {
     setFeedbacks([]);
   };
 
-  // 🏆 BEST TEACHER (GLOBAL SIMPLE RANK)
+  //  BEST TEACHER (GLOBAL SIMPLE RANK)
   const getBestTeacher = () => {
     const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
 
@@ -113,7 +113,7 @@ const TeacherCourse = ({ assignedCourses, teacherId }) => {
             My Courses
           </h3>
 
-          {/* 🏆 BEST TEACHER */}
+          {/* BEST TEACHER */}
           <div className="alert alert-warning text-center fw-bold">
             <FaTrophy className="me-2" />
             Best Teacher: {getBestTeacher()}
@@ -160,12 +160,12 @@ const TeacherCourse = ({ assignedCourses, teacherId }) => {
             <FaChartBar /> {selectedCourse.courseName}
           </h3>
 
-          {/* ⭐ AVG RATING */}
+          {/*  AVG RATING */}
           <div className="alert alert-info">
             <FaStar /> Average Rating: <b>{avgRating}</b>
           </div>
 
-          {/* 📊 SIMPLE BAR GRAPH */}
+          {/*  SIMPLE BAR GRAPH */}
           <div className="mb-4">
             <h6>
               <FaChartBar className="me-2" />

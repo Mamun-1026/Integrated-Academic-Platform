@@ -30,7 +30,7 @@ const CourseDrop = ({ studentData }) => {
       localStorage.getItem(`dropHistory_${userId}`) || "[]",
     );
 
-    // SAFETY FILTER (ONLY VALID ENROLLED COURSES)
+    //FILTER (ONLY VALID ENROLLED COURSES)
     const validCourses = stored.filter((c) => c && c.courseId && c.courseName);
 
     setCourses(validCourses);

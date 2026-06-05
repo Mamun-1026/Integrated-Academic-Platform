@@ -47,7 +47,7 @@ const Login = () => {
       if (student) {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("username", student.name);
-        localStorage.setItem("userId", student.studentId); // ✅ studentId as userId
+        localStorage.setItem("userId", student.studentId); //  studentId as userId
         localStorage.setItem("role", "Student");
         navigate("/dashboard");
         return;
@@ -67,7 +67,7 @@ const Login = () => {
       if (teacher) {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("username", teacher.name || teacher.fullName);
-        localStorage.setItem("teacherId", teacher.teacherId); // ✅ teacherId
+        localStorage.setItem("teacherId", teacher.teacherId); //  teacherId
         localStorage.setItem("role", "Teacher");
         navigate("/teacher-dashboard");
         return;
