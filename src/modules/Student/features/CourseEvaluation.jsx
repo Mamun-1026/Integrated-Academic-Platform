@@ -9,6 +9,7 @@ import {
   FaPaperPlane,
   FaCheckCircle,
 } from "react-icons/fa";
+import { RiBookShelfLine } from "react-icons/ri";
 import { IoCheckmarkDoneCircle, IoTrashBin } from "react-icons/io5";
 import { ImCross } from "react-icons/im";
 
@@ -62,21 +63,21 @@ const CourseEvaluation = ({ studentData }) => {
     return "Not Assigned";
   };
 
-  //  STAR
+  // STAR
   const handleStarClick = (courseId, value) => {
     const updated = { ...ratings, [courseId]: value };
     setRatings(updated);
     localStorage.setItem(`courseRatings_${userId}`, JSON.stringify(updated));
   };
 
-  //  COMMENT
+  // COMMENT
   const handleComment = (courseId, value) => {
     const updated = { ...comments, [courseId]: value };
     setComments(updated);
     localStorage.setItem(`courseComments_${userId}`, JSON.stringify(updated));
   };
 
-  //  ANONYMOUS TOGGLE
+  // ANONYMOUS TOGGLE
   const handleAnonymous = (courseId, value) => {
     const updated = { ...anonymous, [courseId]: value };
     setAnonymous(updated);
@@ -138,7 +139,7 @@ const CourseEvaluation = ({ studentData }) => {
     alert("<ImCross /> No teacher assigned");
   };
 
-  //  EDIT
+  // EDIT
   const handleEdit = (courseId) => {
     const updated = { ...sentCourses, [courseId]: false };
     setSentCourses(updated);
@@ -148,7 +149,7 @@ const CourseEvaluation = ({ studentData }) => {
     );
   };
 
-  //  DELETE
+  // DELETE
   const handleDelete = (course) => {
     const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
 
@@ -175,7 +176,7 @@ const CourseEvaluation = ({ studentData }) => {
     alert("<IoTrashBin /> Feedback deleted!");
   };
 
-  //  STAR UI
+  // ⭐ STAR UI
   const renderStars = (courseId) => {
     const current = ratings[courseId] || 0;
 
@@ -254,7 +255,7 @@ const CourseEvaluation = ({ studentData }) => {
                           />
                         </td>
 
-                        {/* ANONYMOUS CHECKBOX */}
+                        {/* 🔥 ANONYMOUS CHECKBOX */}
                         <td>
                           <input
                             type="checkbox"

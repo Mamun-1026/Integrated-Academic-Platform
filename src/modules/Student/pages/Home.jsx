@@ -126,7 +126,7 @@ const Home = ({ studentData, setSelectedTab, darkMode, setDarkMode }) => {
                 <FaChartLine /> GPA: {gpa}
               </span>
               <span className="d-flex align-items-center gap-1">
-                <FaMoneyBillWave /> {totalDue} ৳
+                <FaMoneyBillWave /> {totalDue} TK
               </span>
             </div>
           </div>
@@ -241,38 +241,11 @@ const Home = ({ studentData, setSelectedTab, darkMode, setDarkMode }) => {
         ))}
       </div>
 
-      {/* PROGRESS */}
-      <div className="card shadow-sm border-0 mb-4 p-3">
-        <h6 className="fw-bold d-flex align-items-center gap-2">
-          <FaChartLine /> Performance
-        </h6>
-
-        <label className="small mt-2 d-flex align-items-center gap-2">
-          <FaGraduationCap /> GPA
-        </label>
-        <div className="progress mb-2">
-          <div
-            className="progress-bar bg-danger"
-            style={{ width: `${gpa * 25}%` }}
-          />
-        </div>
-
-        <label className="small d-flex align-items-center gap-2">
-          <FaCalendarCheck /> Attendance
-        </label>
-        <div className="progress">
-          <div
-            className="progress-bar bg-warning"
-            style={{ width: `${attendance}%` }}
-          />
-        </div>
-      </div>
-
       {/* PAYMENT */}
       {totalDue > 0 && (
         <div className="alert alert-danger d-flex justify-content-between align-items-center">
           <span className="d-flex align-items-center gap-2">
-            <FaMoneyBillWave /> Due: <strong>{totalDue} ৳</strong>
+            <FaMoneyBillWave /> Due: <strong>{totalDue} TK</strong>
           </span>
           <button
             className="btn btn-danger btn-sm"
