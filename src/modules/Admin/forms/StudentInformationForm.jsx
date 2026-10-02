@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { GrFormNextLink } from "react-icons/gr";
+import { IoIosArrowRoundBack } from "react-icons/io";
+
 const StudentInformationForm = ({ studentId, shouldLoad }) => {
   const [step, setStep] = useState(1);
   const [info, setInfo] = useState({
@@ -40,56 +43,65 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
       postOffice: "",
       road: "",
     },
-    createdAt: "", // ← add this
-    updatedAt: "", // ← add this
+    createdAt: "",
+    updatedAt: "",
   });
+
   const compressImage = (file, quality = 0.6) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
-
       reader.onload = (e) => {
         const img = new Image();
         img.src = e.target.result;
-
         img.onload = () => {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
-
           const MAX_WIDTH = 300;
           const scale = MAX_WIDTH / img.width;
-
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scale;
-
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
           const compressed = canvas.toDataURL("image/jpeg", quality);
           resolve(compressed);
         };
       };
-
       reader.readAsDataURL(file);
     });
   };
 
   useEffect(() => {
-    if (!shouldLoad) return;
+    if (!studentId) return;
 
-    const data = JSON.parse(
-      localStorage.getItem("studentInfo_" + studentId) || "null",
-    );
+    const loadStudentDetails = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/students/${studentId}`,
+        );
+        const data = await res.json();
+        if (data && data.success !== false) {
+          setInfo((prev) => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.error("Error loading student info:", err);
+      }
 
-    if (data) {
-      setInfo(data);
-    }
+      const localData = JSON.parse(
+        localStorage.getItem("studentInfo_" + studentId) || "null",
+      );
+      if (localData) {
+        setInfo(localData);
+      }
 
-    const img = localStorage.getItem("profileImage_" + studentId);
-    if (img) {
-      setInfo((prev) => ({
-        ...prev,
-        picture: img,
-      }));
-    }
+      const img = localStorage.getItem("profileImage_" + studentId);
+      if (img) {
+        setInfo((prev) => ({
+          ...prev,
+          picture: img,
+        }));
+      }
+    };
+
+    loadStudentDetails();
   }, [studentId, shouldLoad]);
 
   const handleChange = (e) => {
@@ -104,31 +116,27 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
       setInfo((prev) => ({ ...prev, [name]: value }));
     }
   };
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const compressedImage = await compressImage(file, 0.6);
-
     const now = new Date().toLocaleString();
 
     setInfo((prev) => {
       const updated = {
         ...prev,
-        picture: compressedImage, // optional but useful for UI preview
+        picture: compressedImage,
         updatedAt: now,
       };
 
-      // save only lightweight data
       localStorage.setItem("studentInfo_" + studentId, JSON.stringify(updated));
-
-      // save image separately
       localStorage.setItem("profileImage_" + studentId, compressedImage);
 
       return updated;
     });
 
-    // optional but safe (UI sync)
     window.dispatchEvent(new Event("storage"));
   };
 
@@ -165,32 +173,43 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
     }
     setStep((s) => Math.min(s + 1, 4));
   };
-  const handleBack = () => setStep((s) => Math.max(s - 1, 1));
-  const handleSave = () => {
-    const now = new Date().toLocaleString();
 
+  const handleBack = () => setStep((s) => Math.max(s - 1, 1));
+
+  const handleSave = async () => {
+    const now = new Date().toLocaleString();
     const finalInfo = {
       ...info,
+      studentId: studentId,
       picture: info.picture || null,
       createdAt: info.createdAt || now,
       updatedAt: now,
     };
 
     localStorage.setItem("studentInfo_" + studentId, JSON.stringify(finalInfo));
-
     setInfo(finalInfo);
 
-    alert("Student information saved!");
+    try {
+      await fetch(`http://localhost:5000/api/students/${studentId}/info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalInfo),
+      });
+      alert("Student information saved!");
+    } catch (err) {
+      console.error(err);
+      alert("Student information saved locally!");
+    }
   };
+
   return (
     <div className="section-box">
-      {" "}
       {info.createdAt && (
         <div className="mb-2 text-muted">
           Created At: {info.createdAt} | Last Updated: {info.updatedAt}
         </div>
       )}
-      <h5 className="mb-3">Step {step}</h5> {/* Step 1: Student Info */}{" "}
+      <h5 className="mb-3">Step {step}</h5>
       {step === 1 && (
         <div className="row g-3">
           {/* LEFT SIDE STEP INFO */}
@@ -391,10 +410,10 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
           </div>
         </div>
       )}
-      {/* Step 2: University Info */}{" "}
+
+      {/* Step 2: University Info */}
       {step === 2 && (
         <div className="row g-3">
-          {/* LEFT SIDE STEP VIEW (same style as step 1) */}
           <div className="col-md-3">
             <div
               className="card shadow-sm border-0 p-3 sticky-top"
@@ -403,15 +422,9 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
               <h6 className="mb-3 text-primary">Step Progress</h6>
 
               <div className="d-flex flex-column gap-2">
-                <div
-                  className={`p-2 rounded ${step === 1 ? "bg-light" : "bg-light"}`}
-                >
-                  1. Personal Info
-                </div>
+                <div className="p-2 rounded bg-light">1. Personal Info</div>
 
-                <div
-                  className={`p-2 rounded ${step === 2 ? "bg-success text-white" : "bg-light"}`}
-                >
+                <div className="p-2 rounded bg-success text-white">
                   2. University Info
                 </div>
 
@@ -422,7 +435,6 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
             </div>
           </div>
 
-          {/* RIGHT SIDE FORM */}
           <div className="col-md-9">
             <div className="card shadow border-0">
               <div className="card-header bg-gradient bg-success text-white">
@@ -529,10 +541,10 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
           </div>
         </div>
       )}
-      {/* Step 3: Parent Info */}{" "}
+
+      {/* Step 3: Parent Info */}
       {step === 3 && (
         <div className="row g-3">
-          {/* LEFT STEP PANEL */}
           <div className="col-md-3">
             <div
               className="card shadow-sm border-0 p-3 sticky-top"
@@ -553,7 +565,6 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
             </div>
           </div>
 
-          {/* RIGHT FORM */}
           <div className="col-md-9">
             <div className="card shadow border-0">
               <div className="card-header bg-gradient bg-warning text-dark">
@@ -679,10 +690,10 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
           </div>
         </div>
       )}
-      {/* Step 4: Address */}{" "}
+
+      {/* Step 4: Address */}
       {step === 4 && (
         <div className="row g-3">
-          {/* LEFT STEP PANEL */}
           <div className="col-md-3">
             <div
               className="card shadow-sm border-0 p-3 sticky-top"
@@ -700,7 +711,6 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
             </div>
           </div>
 
-          {/* RIGHT FORM */}
           <div className="col-md-9">
             <div className="card shadow border-0">
               <div className="card-header bg-gradient bg-dark text-white">
@@ -848,14 +858,15 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
           </div>
         </div>
       )}
-      {/* Navigation Buttons */}{" "}
+
+      {/* Navigation Buttons */}
       <div className="d-flex justify-content-between mt-4 p-2 border-top">
         {step > 1 ? (
           <button
             className="btn btn-outline-secondary px-4"
             onClick={handleBack}
           >
-            ← Back
+            <IoIosArrowRoundBack /> Back
           </button>
         ) : (
           <div />
@@ -863,15 +874,16 @@ const StudentInformationForm = ({ studentId, shouldLoad }) => {
 
         {step < 4 ? (
           <button className="btn btn-primary px-4" onClick={handleNext}>
-            Next →
+            Next <GrFormNextLink />
           </button>
         ) : (
           <button className="btn btn-success px-4" onClick={handleSave}>
-            Save Student
+            Save Student Information Form
           </button>
         )}
       </div>
     </div>
   );
 };
+
 export default StudentInformationForm;

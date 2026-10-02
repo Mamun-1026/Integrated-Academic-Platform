@@ -21,17 +21,36 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
   const [replyText, setReplyText] = useState({});
   const [refresh, setRefresh] = useState(false);
 
-  // 👇 PDF PREVIEW STATE
+  // PDF PREVIEW STATE
   const [previewFile, setPreviewFile] = useState(null);
 
   /* ================= LOAD MATERIALS ================= */
   useEffect(() => {
     if (!selectedCourse) return;
 
-    const key = `materials_${teacherId}_${selectedCourse.courseId}`;
-    const data = JSON.parse(localStorage.getItem(key) || "[]");
+    const loadMaterials = async () => {
+      let data = [];
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/materials/${selectedCourse.courseId}`,
+        );
+        const apiData = await res.json();
+        if (Array.isArray(apiData)) {
+          data = apiData;
+        }
+      } catch (err) {
+        console.error("Error loading teacher materials from DB:", err);
+      }
 
-    setMaterials(data);
+      if (data.length === 0) {
+        const key = `materials_${teacherId}_${selectedCourse.courseId}`;
+        data = JSON.parse(localStorage.getItem(key) || "[]");
+      }
+
+      setMaterials(data);
+    };
+
+    loadMaterials();
   }, [selectedCourse, teacherId, refresh]);
 
   const getComments = (id) =>
@@ -41,7 +60,7 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
     localStorage.setItem("comments_" + id, JSON.stringify(data));
 
   /* ================= UPLOAD ================= */
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file || !selectedCourse) return;
 
     const newItem = {
@@ -63,24 +82,42 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
     const global = JSON.parse(localStorage.getItem("allMaterials") || "[]");
     localStorage.setItem("allMaterials", JSON.stringify([newItem, ...global]));
 
+    try {
+      await fetch("http://localhost:5000/api/materials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem),
+      });
+    } catch (err) {
+      console.error("Database material upload sync error:", err);
+    }
+
     setFile(null);
     setMessage("");
     setRefresh(!refresh);
   };
 
   /* ================= DELETE ================= */
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const updated = materials.filter((m) => m.id !== id);
     setMaterials(updated);
 
     const key = `materials_${teacherId}_${selectedCourse.courseId}`;
     localStorage.setItem(key, JSON.stringify(updated));
 
+    try {
+      await fetch(`http://localhost:5000/api/materials/${id}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Database material delete sync error:", err);
+    }
+
     setRefresh(!refresh);
   };
 
   /* ================= COMMENT ================= */
-  const addComment = (materialId) => {
+  const addComment = async (materialId) => {
     const text = commentText[materialId];
     if (!text) return;
 
@@ -94,18 +131,32 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
       reply: null,
     };
 
-    saveComments(materialId, [newComment, ...old]);
+    const updatedComments = [newComment, ...old];
+    saveComments(materialId, updatedComments);
 
     setCommentText((prev) => ({
       ...prev,
       [materialId]: "",
     }));
 
+    try {
+      await fetch(
+        `http://localhost:5000/api/materials/${materialId}/comments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newComment),
+        },
+      );
+    } catch (err) {
+      console.error("Database comment sync error:", err);
+    }
+
     setRefresh(!refresh);
   };
 
   /* ================= REPLY ================= */
-  const addReply = (materialId, commentId) => {
+  const addReply = async (materialId, commentId) => {
     const text = replyText[commentId];
     if (!text) return;
 
@@ -130,6 +181,19 @@ const TeacherAssignment = ({ teacherId, assignedCourses = [] }) => {
       ...prev,
       [commentId]: "",
     }));
+
+    try {
+      await fetch(
+        `http://localhost:5000/api/materials/${materialId}/comments/${commentId}/reply`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ replyText: text }),
+        },
+      );
+    } catch (err) {
+      console.error("Database reply sync error:", err);
+    }
 
     setRefresh(!refresh);
   };

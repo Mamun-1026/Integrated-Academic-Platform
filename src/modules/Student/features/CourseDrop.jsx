@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
   FaTrash,
@@ -18,36 +18,61 @@ const CourseDrop = ({ studentData }) => {
   const [history, setHistory] = useState([]);
   const [undoStack, setUndoStack] = useState(null);
 
-  //  LOAD ONLY THIS STUDENT'S ENROLLED COURSES
+  // LOAD ONLY THIS STUDENT'S ENROLLED COURSES FROM DB & LOCALSTORAGE
   useEffect(() => {
     if (!userId) return;
 
-    const stored = JSON.parse(
-      localStorage.getItem(`studentCourses_${userId}`) || "[]",
-    );
+    const loadEnrolledAndHistory = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/student-courses/${userId}`,
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const validCourses = data.filter(
+            (c) => c && c.courseId && c.courseName,
+          );
+          setCourses(validCourses);
+        } else {
+          const stored = JSON.parse(
+            localStorage.getItem(`studentCourses_${userId}`) || "[]",
+          );
+          const validCourses = stored.filter(
+            (c) => c && c.courseId && c.courseName,
+          );
+          setCourses(validCourses);
+        }
+      } catch (err) {
+        console.error("Error loading student courses:", err);
+        const stored = JSON.parse(
+          localStorage.getItem(`studentCourses_${userId}`) || "[]",
+        );
+        const validCourses = stored.filter(
+          (c) => c && c.courseId && c.courseName,
+        );
+        setCourses(validCourses);
+      }
 
-    const dropHistory = JSON.parse(
-      localStorage.getItem(`dropHistory_${userId}`) || "[]",
-    );
+      const dropHistory = JSON.parse(
+        localStorage.getItem(`dropHistory_${userId}`) || "[]",
+      );
+      setHistory(dropHistory);
+    };
 
-    //FILTER (ONLY VALID ENROLLED COURSES)
-    const validCourses = stored.filter((c) => c && c.courseId && c.courseName);
-
-    setCourses(validCourses);
-    setHistory(dropHistory);
+    loadEnrolledAndHistory();
   }, [userId]);
 
-  //  DEADLINE CHECK
+  // DEADLINE CHECK
   const isDropAllowed = () => {
     const deadline = localStorage.getItem("dropDeadline");
     if (!deadline) return true;
     return new Date() < new Date(deadline);
   };
 
-  //  DROP COURSE (ONLY THIS STUDENT)
-  const handleDrop = (course) => {
+  // DROP COURSE (ONLY THIS STUDENT)
+  const handleDrop = async (course) => {
     if (!isDropAllowed()) {
-      alert("<IoAlertCircleSharp /> Drop deadline expired!");
+      alert("Drop deadline expired!");
       return;
     }
 
@@ -58,7 +83,7 @@ const CourseDrop = ({ studentData }) => {
 
     localStorage.setItem(`studentCourses_${userId}`, JSON.stringify(updated));
 
-    //  HISTORY (this student only)
+    // HISTORY (this student only)
     const newHistory = [
       {
         ...course,
@@ -71,7 +96,7 @@ const CourseDrop = ({ studentData }) => {
 
     localStorage.setItem(`dropHistory_${userId}`, JSON.stringify(newHistory));
 
-    //  ADMIN REQUEST LOG (optional workflow)
+    // ADMIN REQUEST LOG
     const adminReq = JSON.parse(
       localStorage.getItem("dropRequests_admin") || "[]",
     );
@@ -85,7 +110,23 @@ const CourseDrop = ({ studentData }) => {
 
     localStorage.setItem("dropRequests_admin", JSON.stringify(adminReq));
 
-    //  undo support
+    // Sync drop request to Database API
+    try {
+      await fetch("http://localhost:5000/api/drop-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentId: userId,
+          courseId: course.courseId,
+          courseName: course.courseName,
+          status: "pending",
+        }),
+      });
+    } catch (err) {
+      console.error("Database drop request sync error:", err);
+    }
+
+    // undo support
     setUndoStack(course);
 
     setTimeout(() => {
@@ -95,7 +136,7 @@ const CourseDrop = ({ studentData }) => {
     setSelectedCourse(null);
   };
 
-  //  UNDO DROP
+  // UNDO DROP
   const handleUndo = () => {
     if (!undoStack) return;
 
@@ -107,7 +148,7 @@ const CourseDrop = ({ studentData }) => {
 
     setUndoStack(null);
 
-    alert("<IoCheckmarkDoneCircle /> Course restored!");
+    alert("Course restored!");
   };
 
   return (

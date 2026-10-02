@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaChalkboardTeacher,
   FaBook,
@@ -19,25 +19,42 @@ const AssignCourse = ({
   handleRemoveAssignedCourse,
 }) => {
   const [assignSearch, setAssignSearch] = useState("");
-  const ASSIGNED_KEY = "assignedCourses_global";
   const [, setRefresh] = useState(0);
+
   useEffect(() => {
     const refresh = () => setRefresh((p) => p + 1);
-
     window.addEventListener("profileUpdate", refresh);
     return () => window.removeEventListener("profileUpdate", refresh);
   }, []);
 
+  // Fetch assigned courses from Database API instead of purely localStorage
   useEffect(() => {
-    if (selectedAssignTeacher) {
-      const global = JSON.parse(localStorage.getItem(ASSIGNED_KEY) || "[]");
-
-      const filtered = global.filter(
-        (a) => a.teacherId === selectedAssignTeacher.teacherId,
-      );
-
-      setAssignedCourses(filtered);
-    }
+    const fetchAssignedCourses = async () => {
+      if (selectedAssignTeacher) {
+        try {
+          const res = await fetch(
+            `http://localhost:5000/api/assigned-courses/${selectedAssignTeacher.teacherId}`,
+          );
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setAssignedCourses(data);
+          } else {
+            // Fallback to local filtering if needed
+            const global = JSON.parse(
+              localStorage.getItem("assignedCourses_global") || "[]",
+            );
+            const filtered = global.filter(
+              (a) =>
+                String(a.teacherId) === String(selectedAssignTeacher.teacherId),
+            );
+            setAssignedCourses(filtered);
+          }
+        } catch (err) {
+          console.error("Error loading assigned courses:", err);
+        }
+      }
+    };
+    fetchAssignedCourses();
   }, [selectedAssignTeacher, setAssignedCourses]);
 
   return (
@@ -86,7 +103,7 @@ const AssignCourse = ({
                     />
 
                     <div className="flex-grow-1">
-                      <div className="fw-bold">{t.fullName}</div>
+                      <div className="fw-bold">{t.fullName || t.name}</div>
 
                       <div className="d-flex flex-wrap gap-2 mt-1">
                         <span className="badge bg-primary">
@@ -112,7 +129,8 @@ const AssignCourse = ({
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div>
                 <h6 className="mb-0 fw-bold">
-                  Assigning to: {selectedAssignTeacher.fullName}
+                  Assigning to:{" "}
+                  {selectedAssignTeacher.fullName || selectedAssignTeacher.name}
                 </h6>
                 <small className="text-muted">
                   ID: {selectedAssignTeacher.teacherId}
@@ -153,18 +171,16 @@ const AssignCourse = ({
                   c.courseId.toLowerCase().includes(assignSearch.toLowerCase()),
               )
               .map((c) => {
-                const global = JSON.parse(
-                  localStorage.getItem(ASSIGNED_KEY) || "[]",
+                const isAssigned = assignedCourses.some(
+                  (a) => String(a.courseId) === String(c.courseId),
                 );
 
-                const assignedEntry = global.find(
-                  (a) => a.courseId === c.courseId,
+                const assignedToThisTeacher = assignedCourses.some(
+                  (a) =>
+                    String(a.courseId) === String(c.courseId) &&
+                    String(a.teacherId) ===
+                      String(selectedAssignTeacher.teacherId),
                 );
-
-                const isAssigned = !!assignedEntry;
-
-                const assignedToThisTeacher =
-                  assignedEntry?.teacherId === selectedAssignTeacher.teacherId;
 
                 return (
                   <div key={c.courseId} className="col-12 col-md-6 col-lg-4">
@@ -207,7 +223,7 @@ const AssignCourse = ({
                           className="btn btn-secondary btn-sm w-100"
                           disabled
                         >
-                          Assigned
+                          Assigned to another teacher
                         </button>
                       )}
                     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
   FaStar,
@@ -21,31 +21,65 @@ const CourseEvaluation = ({ studentData }) => {
   const [comments, setComments] = useState({});
   const [sentCourses, setSentCourses] = useState({});
   const [anonymous, setAnonymous] = useState({});
+  const [notification, setNotification] = useState(null);
 
-  //  LOAD DATA
+  // LOAD DATA FROM DB API & LOCALSTORAGE
   useEffect(() => {
     if (!userId) return;
 
-    setCourses(
-      JSON.parse(localStorage.getItem(`studentCourses_${userId}`) || "[]"),
-    );
+    const loadEvaluationData = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/student-courses/${userId}`,
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCourses(data);
+        } else {
+          setCourses(
+            JSON.parse(
+              localStorage.getItem(`studentCourses_${userId}`) || "[]",
+            ),
+          );
+        }
+      } catch (err) {
+        console.error("Error loading student courses:", err);
+        setCourses(
+          JSON.parse(localStorage.getItem(`studentCourses_${userId}`) || "[]"),
+        );
+      }
 
-    setRatings(
-      JSON.parse(localStorage.getItem(`courseRatings_${userId}`) || "{}"),
-    );
+      setRatings(
+        JSON.parse(localStorage.getItem(`courseRatings_${userId}`) || "{}"),
+      );
 
-    setComments(
-      JSON.parse(localStorage.getItem(`courseComments_${userId}`) || "{}"),
-    );
+      setComments(
+        JSON.parse(localStorage.getItem(`courseComments_${userId}`) || "{}"),
+      );
 
-    setSentCourses(
-      JSON.parse(localStorage.getItem(`courseFeedbackSent_${userId}`) || "{}"),
-    );
+      setSentCourses(
+        JSON.parse(
+          localStorage.getItem(`courseFeedbackSent_${userId}`) || "{}",
+        ),
+      );
 
-    setAnonymous(
-      JSON.parse(localStorage.getItem(`courseAnonymous_${userId}`) || "{}"),
-    );
+      setAnonymous(
+        JSON.parse(localStorage.getItem(`courseAnonymous_${userId}`) || "{}"),
+      );
+    };
+
+    loadEvaluationData();
   }, [userId]);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // GET TEACHER
   const getTeacherName = (courseId) => {
@@ -57,7 +91,7 @@ const CourseEvaluation = ({ studentData }) => {
       );
 
       if (assigned.find((c) => c.courseId === courseId)) {
-        return t.fullName || "Unknown";
+        return t.fullName || t.name || "Unknown";
       }
     }
     return "Not Assigned";
@@ -84,8 +118,8 @@ const CourseEvaluation = ({ studentData }) => {
     localStorage.setItem(`courseAnonymous_${userId}`, JSON.stringify(updated));
   };
 
-  //  SEND / UPDATE
-  const sendFeedback = (course) => {
+  // SEND / UPDATE
+  const sendFeedback = async (course) => {
     const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
 
     for (let t of teachers) {
@@ -105,10 +139,10 @@ const CourseEvaluation = ({ studentData }) => {
           studentId: userId,
           courseId: course.courseId,
           courseName: course.courseName,
-          teacherName: t.fullName,
+          teacherName: t.fullName || t.name,
           rating: ratings[course.courseId] || "N/A",
           comment: comments[course.courseId] || "",
-          anonymous: anonymous[course.courseId] || false, // 🔥 IMPORTANT
+          anonymous: anonymous[course.courseId] || false,
           date: new Date().toLocaleString(),
         };
 
@@ -131,12 +165,31 @@ const CourseEvaluation = ({ studentData }) => {
           JSON.stringify(updatedSent),
         );
 
-        alert("<IoCheckmarkDoneCircle /> Feedback saved!");
+        // Sync evaluation feedback to Database API
+        try {
+          await fetch("http://localhost:5000/api/course-evaluations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newEntry),
+          });
+        } catch (err) {
+          console.error("Database feedback sync error:", err);
+        }
+
+        setNotification({
+          type: "success",
+          icon: <IoCheckmarkDoneCircle size={20} />,
+          message: "Feedback saved and synced!",
+        });
         return;
       }
     }
 
-    alert("<ImCross /> No teacher assigned");
+    setNotification({
+      type: "danger",
+      icon: <ImCross size={16} />,
+      message: "No teacher assigned",
+    });
   };
 
   // EDIT
@@ -173,10 +226,14 @@ const CourseEvaluation = ({ studentData }) => {
       JSON.stringify(updatedSent),
     );
 
-    alert("<IoTrashBin /> Feedback deleted!");
+    setNotification({
+      type: "warning",
+      icon: <IoTrashBin size={20} />,
+      message: "Feedback deleted!",
+    });
   };
 
-  // ⭐ STAR UI
+  // STAR UI
   const renderStars = (courseId) => {
     const current = ratings[courseId] || 0;
 
@@ -208,6 +265,14 @@ const CourseEvaluation = ({ studentData }) => {
         </div>
 
         <div className="card-body">
+          {notification && (
+            <div
+              className={`alert alert-${notification.type} d-flex align-items-center gap-2`}
+            >
+              {notification.icon}
+              <span>{notification.message}</span>
+            </div>
+          )}
           {courses.length === 0 ? (
             <div className="text-center text-muted py-4">
               No courses enrolled yet
@@ -221,7 +286,7 @@ const CourseEvaluation = ({ studentData }) => {
                     <th>Teacher</th>
                     <th>Rating</th>
                     <th>Comment</th>
-                    <th>Anonymous</th> {/* 🔥 NEW */}
+                    <th>Anonymous</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -255,7 +320,7 @@ const CourseEvaluation = ({ studentData }) => {
                           />
                         </td>
 
-                        {/* 🔥 ANONYMOUS CHECKBOX */}
+                        {/* ANONYMOUS CHECKBOX */}
                         <td>
                           <input
                             type="checkbox"

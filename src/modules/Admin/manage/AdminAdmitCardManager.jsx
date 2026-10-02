@@ -10,13 +10,24 @@ const AdminAdmitCardManager = () => {
     section: "All",
   });
 
-  // LOAD DATA
+  // LOAD DATA FROM DATABASE & LOCALSTORAGE
   useEffect(() => {
-    const loadData = () => {
-      const s = JSON.parse(localStorage.getItem("students") || "[]");
-      const c = JSON.parse(localStorage.getItem("admitCards") || "[]");
+    const loadData = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/students");
+        const data = await res.json();
+        const normalized = (Array.isArray(data) ? data : []).map((s) => ({
+          ...s,
+          studentId: s.student_id || s.studentId,
+        }));
+        setStudents(normalized);
+      } catch (err) {
+        console.error("Error fetching students:", err);
+        const s = JSON.parse(localStorage.getItem("students") || "[]");
+        setStudents(s);
+      }
 
-      setStudents(s);
+      const c = JSON.parse(localStorage.getItem("admitCards") || "[]");
       setAdmitCards(c);
     };
 
@@ -37,7 +48,7 @@ const AdminAdmitCardManager = () => {
       localStorage.getItem("billHistory_" + student.studentId) || "[]",
     );
 
-    // ❗ must have bill history
+    // must have bill history
     if (!Array.isArray(bills) || bills.length === 0) {
       return false;
     }
@@ -76,7 +87,7 @@ const AdminAdmitCardManager = () => {
       .filter((s) => !existingIds.has(String(s.studentId).trim()))
       .map((s, i) => ({
         studentId: String(s.studentId).trim(),
-        name: s.name,
+        name: s.name || s.fullName,
         department: s.department,
         batch: s.batch,
         section: s.section,

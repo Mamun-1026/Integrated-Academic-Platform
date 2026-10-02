@@ -39,7 +39,7 @@ body {
 }
 
 /* =========================
-   LOGIN PAGE BACKGROUND (FIXED CLEAN)
+   LOGIN PAGE BACKGROUND & LAYOUT (FIXED LOGO CUT)
 ========================= */
 .login-page {
   min-height: 100vh;
@@ -47,12 +47,26 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  overflow: hidden;
-
-  background: linear-gradient(135deg, #fff5f5, #ffecec, #ffffff);
+  align-items: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 40px 20px; /* পর্যাপ্ত প্যাডিং দেওয়া হয়েছে যাতে লোগো বা ওপরের অংশ কেটে না যায় */
+  background: linear-gradient(135deg, #fce8e6, #fff5f5, #f8f9fa);
 }
 
-/* background overlay (ONLY ONCE, FIXED) */
+.login-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  padding-top: 20px; /* লোগো উপরে পারফেক্ট স্পেস রাখার জন্য */
+  padding-bottom: 20px;
+}
+
+/* background overlay */
 .login-bg::before {
   content: "";
   position: absolute;
@@ -67,7 +81,7 @@ body {
   z-index: 0;
 }
 
-/* floating bubbles (FIXED duplicate issue removed) */
+/* floating bubbles */
 .login-page::before {
   content: "";
   position: absolute;
@@ -95,19 +109,13 @@ body {
     );
   animation: floatBubbles 18s linear infinite;
   opacity: 0.7;
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* =========================
-   SECTION BOX (UNCHANGED)
+   SECTION BOX
 ========================= */
-/* .section-box {
-  background: #fff3f3;
-  border-left: 5px solid #d40000;
-  border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 25px;
-} */
-
 .section-title {
   color: #c00000;
   font-weight: 600;
@@ -122,13 +130,76 @@ body {
 }
 
 /* =========================
-   LOGIN CARD
+   LOGIN CARD & BRANDING (FIXED LOGO CUT ISSUE)
 ========================= */
+.brand-header {
+  margin-top: 10px;
+}
+
+.logo-wrapper {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 50%;
+  box-shadow: 0 10px 25px rgba(220, 53, 69, 0.15) !important;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.university-logo {
+  height: 70px;
+  width: 70px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  margin: 0;
+}
+
 .login-card {
-  width: 380px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(8px);
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-3px);
+}
+
+.login-card .input-group {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #ced4da;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.login-card .input-group:focus-within {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.login-card .form-control,
+.login-card .form-select {
+  border: none !important;
+  background-color: #fff !important;
+}
+
+.login-submit-btn {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  border: none;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+
+.login-submit-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
 }
 
 /* =========================
@@ -191,7 +262,7 @@ body.teacher-dark {
   transition: 0.3s;
 }
 
-/* DARK MODE SIDEBAR (ONLY ONE RULE) */
+/* DARK MODE SIDEBAR */
 body.student-dark .student-sidebar,
 body.teacher-dark .teacher-sidebar {
   background-color: #1e293b;
@@ -210,7 +281,6 @@ body.teacher-dark .teacher-sidebar {
   transition: 0.2s;
 }
 
-/* hover */
 .sidebar-item:hover {
   background: #e2e8f0;
 }
@@ -220,13 +290,11 @@ body.teacher-dark .sidebar-item:hover {
   background: #334155;
 }
 
-/* active */
 .sidebar-item.active {
   background: #dc2626;
   color: #fff;
 }
 
-/* dark text fix */
 body.student-dark .sidebar-item,
 body.teacher-dark .sidebar-item {
   color: #e2e8f0;
@@ -235,20 +303,16 @@ body.teacher-dark .sidebar-item {
 /* =========================
    GLOBAL TEXT FIX (IMPORTANT)
 ========================= */
-
-/* All text inside dark mode readable */
 body.student-dark,
 body.teacher-dark {
   color: #e2e8f0;
 }
 
-/* paragraphs */
 body.student-dark p,
 body.teacher-dark p {
   color: #e2e8f0;
 }
 
-/* headings */
 body.student-dark h1,
 body.student-dark h2,
 body.student-dark h3,
@@ -258,7 +322,6 @@ body.teacher-dark h3 {
   color: #f1f5f9;
 }
 
-/* labels / spans */
 body.student-dark span,
 body.teacher-dark span,
 body.student-dark label,
@@ -266,7 +329,6 @@ body.teacher-dark label {
   color: #e2e8f0;
 }
 
-/* inputs */
 body.student-dark input,
 body.student-dark select,
 body.teacher-dark input,
@@ -293,37 +355,18 @@ body.teacher-dark select {
   color: #cbd5f5;
 }
 
-.student-dark .form-control,
-.teacher-dark .form-control {
-  background-color: #1e293b;
-  color: #e2e8f0;
-  border: 1px solid #334155;
-}
-
-.student-dark .form-label,
-.teacher-dark .form-label {
-  color: #cbd5f5;
-}
-
 .student-dark input::placeholder,
 .teacher-dark input::placeholder {
   color: #94a3b8;
 }
 
 /*student profile*/
-
 .card {
   transition: 0.3s;
 }
 
 .card:hover {
   transform: translateY(-3px);
-}
-
-.student-dark .card,
-.teacher-dark .card {
-  background-color: #1e293b;
-  color: #e2e8f0;
 }
 
 .student-dark .card-header,
@@ -337,16 +380,9 @@ body.teacher-dark select {
   color: #e2e8f0;
 }
 
-/* ===== DARK MODE TEXT FIX ===== */
 .student-dark .text-muted,
 .teacher-dark .text-muted {
-  color: #cbd5e1 !important; /* soft readable gray */
-}
-
-/* optional stronger fix for headings under titles */
-.student-dark p,
-.teacher-dark p {
-  color: #e2e8f0;
+  color: #cbd5e1 !important;
 }
 
 /*quick action teacher*/
@@ -362,7 +398,6 @@ body.teacher-dark select {
   font-size: 14px;
 }
 
-/*new*/
 /*Dashboard*/
 .stat-card:hover,
 .filter-card:hover,
@@ -403,11 +438,4 @@ body.teacher-dark select {
 .form-card select:focus {
   box-shadow: none;
   border-color: #0d6efd;
-}
-
-.university-logo {
-  height: 120px;
-  width: auto;
-  display: block;
-  margin: 0 auto 15px;
 }

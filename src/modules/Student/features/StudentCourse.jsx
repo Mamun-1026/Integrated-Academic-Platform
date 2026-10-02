@@ -16,19 +16,57 @@ const StudentCourse = ({ studentData }) => {
   const [batchFilter, setBatchFilter] = useState("");
   const [sectionFilter, setSectionFilter] = useState("");
 
+  // LOAD DATA FROM DB API & LOCALSTORAGE
   useEffect(() => {
-    const adminCourses = JSON.parse(localStorage.getItem("courses") || "[]");
-    const studentCourses = JSON.parse(
-      localStorage.getItem("studentCourses_" + userId) || "[]",
-    );
-    const studentInfo = JSON.parse(
-      localStorage.getItem("studentInfo_" + userId) || "{}",
-    );
+    if (!userId) return;
 
-    setStudentBatch(studentInfo.batch || "");
-    setStudentSection(studentInfo.section || "");
-    setAllCourses(adminCourses);
-    setSelectedCourses(studentCourses);
+    const loadCourseRegistrationData = async () => {
+      let adminCourses = [];
+      let studentCourses = [];
+      let studentInfo = {};
+
+      try {
+        const resCourses = await fetch("http://localhost:5000/api/courses");
+        const dataCourses = await resCourses.json();
+        if (Array.isArray(dataCourses)) adminCourses = dataCourses;
+
+        const resEnrolled = await fetch(
+          `http://localhost:5000/api/student-courses/${userId}`,
+        );
+        const dataEnrolled = await resEnrolled.json();
+        if (Array.isArray(dataEnrolled)) studentCourses = dataEnrolled;
+
+        const resInfo = await fetch(
+          `http://localhost:5000/api/students/${userId}`,
+        );
+        const dataInfo = await resInfo.json();
+        if (dataInfo && dataInfo.success !== false) studentInfo = dataInfo;
+      } catch (err) {
+        console.error("Error loading course registration data from DB:", err);
+      }
+
+      // Fallbacks
+      if (adminCourses.length === 0) {
+        adminCourses = JSON.parse(localStorage.getItem("courses") || "[]");
+      }
+      if (studentCourses.length === 0) {
+        studentCourses = JSON.parse(
+          localStorage.getItem("studentCourses_" + userId) || "[]",
+        );
+      }
+      if (Object.keys(studentInfo).length === 0) {
+        studentInfo = JSON.parse(
+          localStorage.getItem("studentInfo_" + userId) || "{}",
+        );
+      }
+
+      setStudentBatch(studentInfo.batch || "");
+      setStudentSection(studentInfo.section || "");
+      setAllCourses(adminCourses);
+      setSelectedCourses(studentCourses);
+    };
+
+    loadCourseRegistrationData();
   }, [userId]);
 
   const totalCredits = selectedCourses.reduce(
@@ -54,7 +92,7 @@ const StudentCourse = ({ studentData }) => {
       sectionFilter ? course.section === sectionFilter : true,
     );
 
-  const handleAddCourse = (course) => {
+  const handleAddCourse = async (course) => {
     if (course.batch !== studentBatch || course.section !== studentSection) {
       return alert(
         "You can only enroll in your own batch and section courses!",
@@ -66,20 +104,41 @@ const StudentCourse = ({ studentData }) => {
     const updated = [...selectedCourses, course];
     setSelectedCourses(updated);
     localStorage.setItem("studentCourses_" + userId, JSON.stringify(updated));
+
+    // Sync to DB
+    try {
+      await fetch(`http://localhost:5000/api/student-courses/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courses: updated }),
+      });
+    } catch (err) {
+      console.error("Database course add sync error:", err);
+    }
   };
 
-  const handleRemoveCourse = (course) => {
+  const handleRemoveCourse = async (course) => {
     const updated = selectedCourses.filter(
       (c) => c.courseId !== course.courseId,
     );
     setSelectedCourses(updated);
     localStorage.setItem("studentCourses_" + userId, JSON.stringify(updated));
+
+    // Sync to DB
+    try {
+      await fetch(`http://localhost:5000/api/student-courses/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courses: updated }),
+      });
+    } catch (err) {
+      console.error("Database course remove sync error:", err);
+    }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (totalCredits < MIN_CREDIT) return alert("Minimum 18 credits required");
 
-    // Semester auto detect
     // Semester auto detect (Spring / Summer / Fall)
     const month = new Date().getMonth() + 1; // 0-based, so +1
     const year = new Date().getFullYear();
@@ -93,10 +152,20 @@ const StudentCourse = ({ studentData }) => {
       semesterName = `Fall ${year}`;
     }
 
-    // Old bills
-    const oldBills = JSON.parse(
-      localStorage.getItem(`billHistory_${userId}`) || "[]",
-    );
+    let oldBills = [];
+    try {
+      const resBills = await fetch(`http://localhost:5000/api/bills/${userId}`);
+      const dataBills = await resBills.json();
+      if (Array.isArray(dataBills)) oldBills = dataBills;
+    } catch (err) {
+      console.error("Error fetching bills:", err);
+    }
+
+    if (oldBills.length === 0) {
+      oldBills = JSON.parse(
+        localStorage.getItem(`billHistory_${userId}`) || "[]",
+      );
+    }
 
     // Check if any previous due is unpaid
     const hasUnpaid = oldBills.some((bill) => bill.due > 0);
@@ -138,13 +207,23 @@ const StudentCourse = ({ studentData }) => {
       developmentFee: DEV_FEE,
       totalAmount: totalAmount,
       paid: 0,
-      due: totalAmount, // dues reflect here
+      due: totalAmount,
     };
 
     const updatedBills = [...oldBills, newBill];
     localStorage.setItem(`billHistory_${userId}`, JSON.stringify(updatedBills));
 
-    alert("Course registration completed & bill generated!");
+    try {
+      await fetch(`http://localhost:5000/api/bills/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newBill),
+      });
+      alert("Course registration completed & bill generated to Database!");
+    } catch (err) {
+      console.error("Database bill generation sync error:", err);
+      alert("Course registration completed & bill generated locally!");
+    }
   };
 
   const highlightText = (text) => {
@@ -259,7 +338,7 @@ const StudentCourse = ({ studentData }) => {
             </div>
 
             {/* Confirm Button inside left box */}
-            <div className="mt-4 mb-4 text-center">
+            <div className="mt-4 mb-4 text-center px-3">
               <button
                 className="btn btn-dark w-100 shadow-sm"
                 disabled={totalCredits < MIN_CREDIT}

@@ -16,12 +16,21 @@ const AdminNotice = () => {
     message: "",
   });
 
+  // Load notices from Database via API
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("notices") || "[]");
-    setNotices(stored);
+    const fetchNotices = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/notices");
+        const data = await res.json();
+        setNotices(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error fetching notices:", err);
+      }
+    };
+    fetchNotices();
   }, []);
 
-  const handleCreateNotice = () => {
+  const handleCreateNotice = async () => {
     if (!noticeForm.title || !noticeForm.message) {
       alert("Please fill all fields");
       return;
@@ -31,19 +40,31 @@ const AdminNotice = () => {
       id: Date.now(),
       title: noticeForm.title,
       message: noticeForm.message,
-
       senderType: "admin",
-      senderName: "Admin", // ✅ IMPORTANT
-
+      senderName: "Admin",
       createdAt: new Date().toLocaleString(),
     };
 
-    const updated = [newNotice, ...notices];
+    try {
+      const res = await fetch("http://localhost:5000/api/notices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newNotice),
+      });
+      const data = await res.json();
 
-    localStorage.setItem("notices", JSON.stringify(updated));
-    setNotices(updated);
-
-    setNoticeForm({ title: "", message: "" });
+      if (data.success) {
+        const updated = [newNotice, ...notices];
+        setNotices(updated);
+        setNoticeForm({ title: "", message: "" });
+        alert("Notice Published & Saved to Database!");
+      } else {
+        alert("Failed to publish notice.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Database connection error");
+    }
   };
 
   return (
@@ -113,7 +134,7 @@ const AdminNotice = () => {
                   {/* MESSAGE */}
                   <div className="small mb-2">{n.message}</div>
 
-                  {/* EXTRA INFO (Teacher হলে show করবে) */}
+                  {/* EXTRA INFO */}
                   {n.senderType === "teacher" && (
                     <>
                       <div className="small text-primary">

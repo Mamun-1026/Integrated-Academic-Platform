@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 import {
   FaUser,
   FaIdCard,
@@ -16,79 +17,122 @@ const ResultHistory = ({ studentData }) => {
   const [semesterResults, setSemesterResults] = useState([]);
 
   useEffect(() => {
-    const info = JSON.parse(
-      localStorage.getItem("studentInfo_" + userId) || "{}",
-    );
-    setStudentInfo(info);
+    const loadResults = async () => {
+      let studentCourses = [];
+      let studentResults = {};
+      let info = {};
 
-    const studentCourses =
-      JSON.parse(localStorage.getItem("studentCourses_" + userId) || "[]") ||
-      [];
-    const studentResults = JSON.parse(
-      localStorage.getItem("studentResults_" + userId) || "{}",
-    );
+      try {
+        const resCourses = await fetch(
+          `http://localhost:5000/api/student-courses/${userId}`,
+        );
+        const dataCourses = await resCourses.json();
+        if (Array.isArray(dataCourses)) studentCourses = dataCourses;
 
-    const courses = studentCourses.map((c) => {
-      const res = studentResults[c.courseId] || {};
-      let gp = 0;
+        const resResults = await fetch(
+          `http://localhost:5000/api/student-results/${userId}`,
+        );
+        const dataResults = await resResults.json();
+        if (dataResults && typeof dataResults === "object")
+          studentResults = dataResults;
 
-      if (
-        res.quiz !== undefined &&
-        res.midterm !== undefined &&
-        res.final !== undefined
-      ) {
-        const totalMarks = res.quiz + res.midterm + res.final;
-        const percentage = totalMarks / 100;
-
-        if (percentage >= 0.8) gp = 4.0;
-        else if (percentage >= 0.75) gp = 3.75;
-        else if (percentage >= 0.7) gp = 3.5;
-        else if (percentage >= 0.65) gp = 3.25;
-        else if (percentage >= 0.6) gp = 3.0;
-        else if (percentage >= 0.55) gp = 2.75;
-        else if (percentage >= 0.5) gp = 2.5;
-        else if (percentage >= 0.45) gp = 2.25;
-        else if (percentage >= 0.4) gp = 2.0;
-        else gp = 0.0;
+        const resInfo = await fetch(
+          `http://localhost:5000/api/students/${userId}`,
+        );
+        const dataInfo = await resInfo.json();
+        if (dataInfo && dataInfo.success !== false) info = dataInfo;
+      } catch (err) {
+        console.error("Error fetching results from DB:", err);
       }
 
-      const weightedGP = gp * (c.credit || 3);
-      const grade = gp > 0 ? getGrade(gp) : "";
+      // Fallback to localStorage if empty
+      if (Object.keys(info).length === 0) {
+        info = JSON.parse(
+          localStorage.getItem("studentInfo_" + userId) || "{}",
+        );
+      }
+      setStudentInfo(info);
 
-      return {
-        courseId: c.courseId,
-        courseName: c.courseName,
-        status: "Regular",
-        credit: c.credit || 3,
-        gp,
-        weightedGP,
-        grade,
-      };
-    });
+      if (studentCourses.length === 0) {
+        studentCourses = JSON.parse(
+          localStorage.getItem("studentCourses_" + userId) || "[]",
+        );
+      }
 
-    const validCourses = courses.filter((c) => c.gp > 0);
+      if (Object.keys(studentResults).length === 0) {
+        studentResults = JSON.parse(
+          localStorage.getItem("studentResults_" + userId) || "{}",
+        );
+      }
 
-    const totalCredit = validCourses.reduce(
-      (sum, c) => sum + (c.credit || 0),
-      0,
-    );
+      const courses = studentCourses.map((c) => {
+        const res = studentResults[c.courseId] || {};
+        let gp = 0;
 
-    const totalWeightedGP = validCourses.reduce(
-      (sum, c) => sum + (c.weightedGP || 0),
-      0,
-    );
+        if (
+          res.quiz !== undefined &&
+          res.midterm !== undefined &&
+          res.final !== undefined
+        ) {
+          const totalMarks =
+            Number(res.quiz) + Number(res.midterm) + Number(res.final);
+          const percentage = totalMarks / 100;
 
-    const semesterGPA =
-      totalCredit > 0 ? (totalWeightedGP / totalCredit).toFixed(2) : "-";
+          if (percentage >= 0.8) gp = 4.0;
+          else if (percentage >= 0.75) gp = 3.75;
+          else if (percentage >= 0.7) gp = 3.5;
+          else if (percentage >= 0.65) gp = 3.25;
+          else if (percentage >= 0.6) gp = 3.0;
+          else if (percentage >= 0.55) gp = 2.75;
+          else if (percentage >= 0.5) gp = 2.5;
+          else if (percentage >= 0.45) gp = 2.25;
+          else if (percentage >= 0.4) gp = 2.0;
+          else gp = 0.0;
+        }
 
-    setSemesterResults([
-      {
-        semester: "Semester 1",
-        courses,
-        totalCredit: courses.reduce((sum, c) => sum + (c.credit || 0), 0),
-        semesterGPA,
-      },
-    ]);
+        const credit = Number(c.credit) || 3;
+        const weightedGP = gp * credit;
+        const grade = gp > 0 ? getGrade(gp) : "";
+
+        return {
+          courseId: c.courseId,
+          courseName: c.courseName,
+          status: "Regular",
+          credit,
+          gp,
+          weightedGP,
+          grade,
+        };
+      });
+
+      const validCourses = courses.filter((c) => c.gp > 0);
+
+      const totalCredit = validCourses.reduce(
+        (sum, c) => sum + (c.credit || 0),
+        0,
+      );
+
+      const totalWeightedGP = validCourses.reduce(
+        (sum, c) => sum + (c.weightedGP || 0),
+        0,
+      );
+
+      const semesterGPA =
+        totalCredit > 0 ? (totalWeightedGP / totalCredit).toFixed(2) : "-";
+
+      setSemesterResults([
+        {
+          semester: "Semester 1",
+          courses,
+          totalCredit: courses.reduce((sum, c) => sum + (c.credit || 0), 0),
+          semesterGPA,
+        },
+      ]);
+    };
+
+    if (userId) {
+      loadResults();
+    }
   }, [userId]);
 
   const getGrade = (gp) => {
@@ -105,7 +149,7 @@ const ResultHistory = ({ studentData }) => {
   };
 
   const getDisplayName = (info) => {
-    if (info.fullName) return info.fullName;
+    if (info.fullName || info.name) return info.fullName || info.name;
     if (info.firstName || info.lastName)
       return `${info.firstName || ""} ${info.lastName || ""}`.trim();
     return "-";
@@ -171,7 +215,7 @@ const ResultHistory = ({ studentData }) => {
                       <FaChartLine className="text-primary me-2" />
                       <strong>CGPA</strong>
                       <div className="text-muted">
-                        {studentInfo.cumulativeGPA || "-"}
+                        {studentInfo.cumulativeGPA || semester.semesterGPA}
                       </div>
                     </div>
                   </div>
@@ -216,7 +260,9 @@ const ResultHistory = ({ studentData }) => {
                         </td>
                         <td>{c.credit}</td>
                         <td>
-                          <span className="badge bg-primary">{c.grade}</span>
+                          <span className="badge bg-primary">
+                            {c.grade || "-"}
+                          </span>
                         </td>
                         <td className="fw-semibold">{c.gp}</td>
                       </tr>

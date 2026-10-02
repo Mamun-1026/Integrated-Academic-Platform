@@ -8,7 +8,10 @@ const AboutModal = ({
   setStudents,
 }) => {
   return (
-    <div className="modal fade show d-block">
+    <div
+      className="modal fade show d-block"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+    >
       <div className="modal-dialog modal-lg">
         <div className="modal-content">
           <div className="modal-header">
@@ -22,6 +25,7 @@ const AboutModal = ({
             {selectedType === "student" && (
               <StudentInformationForm
                 studentId={selectedUser.studentId}
+                shouldLoad={true}
                 readOnly={false}
                 onSave={(updatedStudent) => {
                   setStudents((prev) =>

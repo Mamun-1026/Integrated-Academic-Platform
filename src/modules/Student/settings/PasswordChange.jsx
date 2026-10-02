@@ -20,35 +20,82 @@ const PasswordChange = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     setError("");
 
     const userId = localStorage.getItem("userId");
-    const students = JSON.parse(localStorage.getItem("students") || "[]");
+    if (!userId) {
+      return setError("User session not found. Please log in again.");
+    }
 
-    let currentUser = students.find((s) => s.studentId === userId);
-
-    if (!currentUser) return setError("User not found");
-    if (currentUser.password !== oldPassword)
-      return setError("Old password incorrect");
     if (newPassword.length < 6)
       return setError("Password must be at least 6 characters");
     if (newPassword !== confirmPassword)
       return setError("Passwords do not match");
 
-    const updated = students.map((s) =>
-      s.studentId === userId
-        ? { ...s, password: newPassword, previousPassword: s.password }
-        : s,
-    );
+    try {
+      // Send request to Backend API for password change verification and update
+      const res = await fetch(
+        `http://localhost:5000/api/auth/change-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            oldPassword,
+            newPassword,
+          }),
+        },
+      );
 
-    localStorage.setItem("students", JSON.stringify(updated));
+      const data = await res.json();
 
-    setSuccess(true);
-    setOldPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setTimeout(() => setSuccess(false), 3000);
+      if (!res.ok || data.success === false) {
+        return setError(data.message || "Failed to update password");
+      }
+
+      // Also update localStorage backup if present
+      const students = JSON.parse(localStorage.getItem("students") || "[]");
+      const updated = students.map((s) =>
+        s.studentId === userId
+          ? { ...s, password: newPassword, previousPassword: s.password }
+          : s,
+      );
+      localStorage.setItem("students", JSON.stringify(updated));
+
+      setSuccess(true);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error(
+        "Database password change error, falling back to local check:",
+        err,
+      );
+
+      // Fallback logic if server is offline
+      const students = JSON.parse(localStorage.getItem("students") || "[]");
+      let currentUser = students.find((s) => s.studentId === userId);
+
+      if (!currentUser) return setError("User not found");
+      if (currentUser.password !== oldPassword)
+        return setError("Old password incorrect");
+
+      const updated = students.map((s) =>
+        s.studentId === userId
+          ? { ...s, password: newPassword, previousPassword: s.password }
+          : s,
+      );
+
+      localStorage.setItem("students", JSON.stringify(updated));
+
+      setSuccess(true);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setSuccess(false), 3000);
+    }
   };
 
   const strength =

@@ -18,14 +18,12 @@ const CreateCourse = ({ courses, setCourses, students }) => {
     credit: 3,
   });
 
-  const handleCreateCourse = () => {
+  const handleCreateCourse = async () => {
     if (!courseFormData.courseId || !courseFormData.courseName) {
       alert("Course ID & Name required");
       return;
     }
-
     const exists = courses.some((c) => c.courseId === courseFormData.courseId);
-
     if (exists) {
       alert("Course ID already exists!");
       return;
@@ -36,30 +34,56 @@ const CreateCourse = ({ courses, setCourses, students }) => {
       createdAt: new Date().toLocaleString(),
     };
 
-    const updatedCourses = [...courses, newCourse];
-    localStorage.setItem("courses", JSON.stringify(updatedCourses));
-    setCourses(updatedCourses);
-
-    setCourseFormData({
-      courseId: "",
-      courseName: "",
-      department: "CSE",
-      batch: "65",
-      section: "A",
-      credit: 3,
-    });
-
-    alert("Course Created & added to students!");
+    try {
+      const res = await fetch("http://localhost:5000/api/courses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCourse),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updatedCourses = [...courses, newCourse];
+        setCourses(updatedCourses);
+        setCourseFormData({
+          courseId: "",
+          courseName: "",
+          department: "CSE",
+          batch: "65",
+          section: "A",
+          credit: 3,
+        });
+        alert("Course Created & Saved to Database!");
+      } else {
+        alert("Failed to save course.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Database connection error");
+    }
   };
 
-  const handleRemoveCourse = (courseId) => {
+  const handleRemoveCourse = async (courseId) => {
     if (!window.confirm("Are you sure?")) return;
 
-    const updated = courses.filter((c) => c.courseId !== courseId);
-    localStorage.setItem("courses", JSON.stringify(updated));
-    setCourses(updated);
-
-    alert("Course Removed!");
+    try {
+      const res = await fetch(`http://localhost:5000/api/courses/${courseId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success || res.ok) {
+        const updated = courses.filter((c) => c.courseId !== courseId);
+        setCourses(updated);
+        alert("Course Removed from Database!");
+      } else {
+        alert("Failed to delete course.");
+      }
+    } catch (err) {
+      console.error(err);
+      // Fallback UI remove if backend endpoint delete route isn't strictly added yet
+      const updated = courses.filter((c) => c.courseId !== courseId);
+      setCourses(updated);
+      alert("Course Removed locally!");
+    }
   };
 
   const handleChange = (e) => {

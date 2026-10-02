@@ -56,23 +56,52 @@ const TeacherRoutine = ({ teacherId }) => {
     return convert(time);
   };
 
-  // LOAD DATA
+  // LOAD DATA FROM DB API & LOCALSTORAGE
   useEffect(() => {
-    const allRoutines = JSON.parse(localStorage.getItem("routines") || "[]");
-    setRoutines(allRoutines);
+    if (!teacherId) return;
 
-    const assigned = JSON.parse(
-      localStorage.getItem("teacherCourses_" + teacherId) || "[]",
-    );
+    const loadTeacherRoutineData = async () => {
+      let allRoutines = [];
+      let assigned = [];
 
-    setAssignedCourses(assigned);
+      try {
+        const resRoutines = await fetch("http://localhost:5000/api/routines");
+        const dataRoutines = await resRoutines.json();
+        if (Array.isArray(dataRoutines)) {
+          allRoutines = dataRoutines;
+        }
+
+        const resAssigned = await fetch(
+          `http://localhost:5000/api/teacher-courses/${teacherId}`,
+        );
+        const dataAssigned = await resAssigned.json();
+        if (Array.isArray(dataAssigned)) {
+          assigned = dataAssigned;
+        }
+      } catch (err) {
+        console.error("Error loading teacher routine data from DB:", err);
+      }
+
+      if (allRoutines.length === 0) {
+        allRoutines = JSON.parse(localStorage.getItem("routines") || "[]");
+      }
+      setRoutines(allRoutines);
+
+      if (assigned.length === 0) {
+        assigned = JSON.parse(
+          localStorage.getItem("teacherCourses_" + teacherId) || "[]",
+        );
+      }
+      setAssignedCourses(assigned);
+    };
+
+    loadTeacherRoutineData();
   }, [teacherId]);
 
-  // FILTER ROUTINE (🔥 MAIN LOGIC)
+  // FILTER ROUTINE
   useEffect(() => {
     if (!assignedCourses.length || !routines.length) return;
 
-    // const courseIds = assignedCourses.map((c) => normalize(c.courseId));
     const courseIds = assignedCourses
       .map((c) => normalize(c.courseId || c))
       .filter(Boolean);
@@ -111,7 +140,7 @@ const TeacherRoutine = ({ teacherId }) => {
       <div
         className="p-4 rounded-4 shadow-sm mb-4 text-center"
         style={{
-          background: "linear-gradient(135deg,#198754,#20c997)",
+          background: "linear-gradient(135deg,#1e3c72,#2a5298,#4f46e5)",
           color: "white",
         }}
       >
@@ -135,17 +164,17 @@ const TeacherRoutine = ({ teacherId }) => {
             className="mb-4 p-3 p-md-4 rounded-4 shadow-sm"
             style={{
               background: "#fff",
-              borderLeft: "6px solid #198754",
+              borderLeft: "6px solid #4f46e5",
             }}
           >
             {/* DAY */}
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-bold text-success text-uppercase m-0 d-flex align-items-center gap-2">
+              <h5 className="fw-bold text-primary text-uppercase m-0 d-flex align-items-center gap-2">
                 <FaLayerGroup />
                 {day}
               </h5>
 
-              <span className="badge bg-success">
+              <span className="badge bg-primary">
                 {groupedRoutine[day].length} Classes
               </span>
             </div>

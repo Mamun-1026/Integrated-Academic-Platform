@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
 import {
   FaUserTie,
   FaBook,
@@ -36,33 +37,68 @@ const Home = ({ setSelectedTab, darkMode, setDarkMode }) => {
   const [students, setStudents] = useState([]);
   const [showNotif, setShowNotif] = useState(false);
 
-  // Load data
+  const teacherId =
+    localStorage.getItem("teacherId") || localStorage.getItem("userId");
+
+  // Load data from DB API & LocalStorage fallback
   useEffect(() => {
-    setTeacherData({
-      username: localStorage.getItem("username") || "",
-      designation: localStorage.getItem("designation") || "Lecturer",
-    });
+    const loadTeacherHomeData = async () => {
+      setTeacherData({
+        username: localStorage.getItem("username") || "",
+        designation: localStorage.getItem("designation") || "Lecturer",
+      });
 
-    const allNotices = safeParse("notices");
-    const teacherCourses = safeParse("teacherCourses");
+      let allNotices = [];
+      let teacherCourses = [];
+      let teacherAssignments = [];
+      let allStudents = [];
 
-    const teacherCourseIds = teacherCourses.map((c) => c.courseId || c.code);
+      try {
+        const resNotices = await fetch("http://localhost:5000/api/notices");
+        const dataNotices = await resNotices.json();
+        if (Array.isArray(dataNotices)) allNotices = dataNotices;
 
-    const filteredNotices = allNotices.filter((n) => {
-      if (n.senderType === "admin") return true;
-      if (n.courseId) return teacherCourseIds.includes(n.courseId);
-      return false;
-    });
+        if (teacherId) {
+          const resCourses = await fetch(
+            `http://localhost:5000/api/teacher-courses/${teacherId}`,
+          );
+          const dataCourses = await resCourses.json();
+          if (Array.isArray(dataCourses)) teacherCourses = dataCourses;
+        }
 
-    const sorted = filteredNotices.sort(
-      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
-    );
+        const resStudents = await fetch("http://localhost:5000/api/students");
+        const dataStudents = await resStudents.json();
+        if (Array.isArray(dataStudents)) allStudents = dataStudents;
+      } catch (err) {
+        console.error("Error loading teacher home data from DB:", err);
+      }
 
-    setNotices(sorted);
-    setCourses(teacherCourses);
-    setAssignments(safeParse("teacherAssignments"));
-    setStudents(safeParse("students"));
-  }, []);
+      if (allNotices.length === 0) allNotices = safeParse("notices");
+      if (teacherCourses.length === 0)
+        teacherCourses = safeParse("teacherCourses");
+      if (allStudents.length === 0) allStudents = safeParse("students");
+      teacherAssignments = safeParse("teacherAssignments");
+
+      const teacherCourseIds = teacherCourses.map((c) => c.courseId || c.code);
+
+      const filteredNotices = allNotices.filter((n) => {
+        if (n.senderType === "admin") return true;
+        if (n.courseId) return teacherCourseIds.includes(n.courseId);
+        return false;
+      });
+
+      const sorted = filteredNotices.sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+      );
+
+      setNotices(sorted);
+      setCourses(teacherCourses);
+      setAssignments(teacherAssignments);
+      setStudents(allStudents);
+    };
+
+    loadTeacherHomeData();
+  }, [teacherId]);
 
   const totalCourses = courses.length;
   const totalStudents = students.length;
@@ -282,8 +318,10 @@ const Home = ({ setSelectedTab, darkMode, setDarkMode }) => {
               <small>No notices available</small>
             ) : (
               notices.slice(0, 5).map((n) => (
-                <div key={n.id} className="border-bottom py-2">
-                  <div className="fw-bold small text-danger">{n.title}</div>
+                <div key={n.id || n.createdAt} className="border-bottom py-2">
+                  <div className="fw-bold small text-danger">
+                    {n.title || "Notice"}
+                  </div>
                   <small>{n.message}</small>
                 </div>
               ))
@@ -317,8 +355,10 @@ const Home = ({ setSelectedTab, darkMode, setDarkMode }) => {
                         : "list-group-item d-flex justify-content-between"
                     }
                   >
-                    <span>{c.name || "Unnamed Course"}</span>
-                    <span className="badge bg-danger">{c.code || "N/A"}</span>
+                    <span>{c.courseName || c.name || "Unnamed Course"}</span>
+                    <span className="badge bg-danger">
+                      {c.courseId || c.code || "N/A"}
+                    </span>
                   </li>
                 ))}
               </ul>

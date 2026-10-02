@@ -29,6 +29,7 @@ const Home = ({ studentData, setSelectedTab, darkMode, setDarkMode }) => {
   const [notices, setNotices] = useState([]);
   const [showNotif, setShowNotif] = useState(false);
   const [studentNotices, setStudentNotices] = useState([]);
+  const [attendance, setAttendance] = useState(75);
 
   const studentId = studentData?.userId;
 
@@ -41,36 +42,90 @@ const Home = ({ studentData, setSelectedTab, darkMode, setDarkMode }) => {
     }
   };
 
+  // LOAD DATA FROM DB API & LOCALSTORAGE
   useEffect(() => {
     if (!studentId) return;
 
-    setCourses(getData("studentCourses_" + studentId));
-    setBills(getData("billHistory_" + studentId));
-    setResults(getData("studentResults_" + studentId, {}));
+    const loadHomeData = async () => {
+      let fetchedCourses = [];
+      let fetchedBills = [];
+      let fetchedResults = {};
+      let fetchedNotices = [];
+      let fetchedAttendance = 75;
 
-    const allNotices = getData("notices", []);
-    const studentCourses = getData("studentCourses_" + studentId);
+      try {
+        const resCourses = await fetch(
+          `http://localhost:5000/api/student-courses/${studentId}`,
+        );
+        const dataCourses = await resCourses.json();
+        if (Array.isArray(dataCourses)) fetchedCourses = dataCourses;
 
-    const studentCourseIds = (studentCourses ?? []).map((c) => c.courseId);
+        const resBills = await fetch(
+          `http://localhost:5000/api/bills/${studentId}`,
+        );
+        const dataBills = await resBills.json();
+        if (Array.isArray(dataBills)) fetchedBills = dataBills;
 
-    const filteredNotices = allNotices.filter((n) => {
-      // ADMIN notices (global)
-      if (n.senderType === "admin") return true;
+        const resResults = await fetch(
+          `http://localhost:5000/api/student-results/${studentId}`,
+        );
+        const dataResults = await resResults.json();
+        if (dataResults && typeof dataResults === "object")
+          fetchedResults = dataResults;
 
-      // TEACHER course-based notices
-      if (n.senderType === "teacher" && n.courseId) {
-        return studentCourseIds.includes(n.courseId);
+        const resNotices = await fetch("http://localhost:5000/api/notices");
+        const dataNotices = await resNotices.json();
+        if (Array.isArray(dataNotices)) fetchedNotices = dataNotices;
+
+        const resAtt = await fetch(
+          `http://localhost:5000/api/attendance/${studentId}`,
+        );
+        const dataAtt = await resAtt.json();
+        if (dataAtt && dataAtt.attendance !== undefined)
+          fetchedAttendance = dataAtt.attendance;
+      } catch (err) {
+        console.error("Error loading home data from DB:", err);
       }
 
-      return false;
-    });
+      // Fallbacks
+      if (fetchedCourses.length === 0) {
+        fetchedCourses = getData("studentCourses_" + studentId);
+      }
+      if (fetchedBills.length === 0) {
+        fetchedBills = getData("billHistory_" + studentId);
+      }
+      if (Object.keys(fetchedResults).length === 0) {
+        fetchedResults = getData("studentResults_" + studentId, {});
+      }
+      if (fetchedNotices.length === 0) {
+        fetchedNotices = getData("notices", []);
+      }
 
-    const sorted = [...filteredNotices].sort(
-      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
-    );
+      setCourses(fetchedCourses);
+      setBills(fetchedBills);
+      setResults(fetchedResults);
+      setAttendance(fetchedAttendance);
 
-    setStudentNotices(sorted);
+      const studentCourseIds = (fetchedCourses ?? []).map((c) => c.courseId);
+
+      const filteredNotices = fetchedNotices.filter((n) => {
+        if (n.senderType === "admin") return true;
+        if (n.senderType === "teacher" && n.courseId) {
+          return studentCourseIds.includes(n.courseId);
+        }
+        return false;
+      });
+
+      const sorted = [...filteredNotices].sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+      );
+
+      setStudentNotices(sorted);
+    };
+
+    loadHomeData();
   }, [studentId]);
+
   // ===== CALCULATIONS =====
   const resultsArray = Object.values(results || {});
   const totalCourses = courses.length;
@@ -80,7 +135,11 @@ const Home = ({ studentData, setSelectedTab, darkMode, setDarkMode }) => {
     resultsArray.length > 0
       ? (
           resultsArray.reduce(
-            (s, r) => s + (r.quiz || 0) + (r.midterm || 0) + (r.final || 0),
+            (s, r) =>
+              s +
+              (Number(r.quiz) || 0) +
+              (Number(r.midterm) || 0) +
+              (Number(r.final) || 0),
             0,
           ) / resultsArray.length
         ).toFixed(2)
@@ -90,7 +149,10 @@ const Home = ({ studentData, setSelectedTab, darkMode, setDarkMode }) => {
     resultsArray.length > 0
       ? (
           resultsArray.reduce((sum, r) => {
-            const m = (r.quiz || 0) + (r.midterm || 0) + (r.final || 0);
+            const m =
+              (Number(r.quiz) || 0) +
+              (Number(r.midterm) || 0) +
+              (Number(r.final) || 0);
             if (m >= 80) return sum + 4.0;
             if (m >= 75) return sum + 3.75;
             if (m >= 70) return sum + 3.5;
@@ -104,8 +166,6 @@ const Home = ({ studentData, setSelectedTab, darkMode, setDarkMode }) => {
           }, 0) / resultsArray.length
         ).toFixed(2)
       : 0;
-
-  const attendance = getData("attendance_" + studentId, 75);
 
   return (
     <div className="container mt-3">

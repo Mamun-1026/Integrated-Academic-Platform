@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { GrFormNextLink } from "react-icons/gr";
 import { IoMdArrowBack } from "react-icons/io";
+
 const TeacherInformationForm = ({ teacherId, readOnly }) => {
   const [step, setStep] = useState(1);
 
@@ -40,17 +41,31 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
     experienceCert: "",
   });
 
-  // LOAD DATA
+  // LOAD DATA FROM DATABASE & LOCALSTORAGE
   useEffect(() => {
     if (!teacherId) return;
 
-    const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
+    const loadTeacherDetails = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/teachers/${teacherId}`,
+        );
+        const data = await res.json();
+        if (data && data.success !== false) {
+          setInfo((prev) => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.error("Error loading teacher info:", err);
+      }
 
-    const found = teachers.find(
-      (t) => String(t.teacherId).trim() === String(teacherId).trim(),
-    );
+      const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
+      const found = teachers.find(
+        (t) => String(t.teacherId).trim() === String(teacherId).trim(),
+      );
+      if (found) setInfo((prev) => ({ ...prev, ...found }));
+    };
 
-    if (found) setInfo(found);
+    loadTeacherDetails();
   }, [teacherId]);
 
   // HANDLE INPUT
@@ -85,17 +100,17 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   // SAVE
-  const handleSave = () => {
+  const handleSave = async () => {
     const now = new Date().toLocaleString();
 
     const finalData = {
       ...info,
+      teacherId: teacherId || info.teacherId,
       createdAt: info.createdAt || now,
       updatedAt: now,
     };
 
     const saved = JSON.parse(localStorage.getItem("teachers") || "[]");
-
     const updated = teacherId
       ? saved.map((t) =>
           String(t.teacherId).trim() === String(teacherId).trim()
@@ -106,7 +121,20 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
 
     localStorage.setItem("teachers", JSON.stringify(updated));
 
-    alert("Teacher Saved Successfully!");
+    try {
+      await fetch(
+        `http://localhost:5000/api/teachers/${teacherId || info.teacherId}/info`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(finalData),
+        },
+      );
+      alert("Teacher Saved Successfully to Database!");
+    } catch (err) {
+      console.error(err);
+      alert("Teacher Saved Locally (Database sync pending)!");
+    }
   };
 
   return (
@@ -194,7 +222,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       placeholder="Enter Password"
                     />
                   </div>
-                  {/* Full Name */}
+                  {/* Email */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Email</label>
                     <input
@@ -329,7 +357,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       placeholder="Faculty Name"
                     />
                   </div>
-                  {/* def Name */}
+                  {/* Department Name */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
                       Department Name
@@ -342,7 +370,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       placeholder="CSE/EEE/GED etc"
                     />
                   </div>
-                  {/* designation Name */}
+                  {/* Designation */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
                       Designation
@@ -355,7 +383,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       placeholder="Lecturer/Cordinator"
                     />
                   </div>
-                  {/* designation Name */}
+                  {/* Joining Date */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
                       Joining Date
@@ -368,7 +396,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       onChange={handleChange}
                     />
                   </div>
-                  {/* Department */}
+                  {/* Employment Type */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
                       Employment Type
@@ -413,14 +441,12 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
               </div>
             </div>
           </div>
-
           {/* RIGHT FORM */}
           <div className="col-md-9">
             <div className="card shadow border-0">
               <div className="card-header bg-gradient bg-warning text-dark">
                 <h5 className="mb-0">Academic Information</h5>
               </div>
-
               <div className="card-body">
                 <div className="row g-4">
                   {/* Qualification */}
@@ -449,7 +475,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       placeholder="Enter University Name"
                     />
                   </div>
-                  {/* deg */}
+                  {/* Subject */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
                       Subject / Major
@@ -462,7 +488,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       placeholder="eg. Computer Science"
                     />
                   </div>
-                  {/* year */}
+                  {/* Year */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
                       Passing Year
@@ -475,7 +501,7 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
                       placeholder="passing year"
                     />
                   </div>
-                  {/*cg */}
+                  {/* CGPA */}
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">
                       Obtained CGPA / GPA
@@ -541,13 +567,11 @@ const TeacherInformationForm = ({ teacherId, readOnly }) => {
               </div>
             </div>
           </div>
-
           <div className="col-md-9">
             <div className="card shadow border-0">
               <div className="card-header bg-gradient bg-dark text-white">
                 <h5 className="mb-0">Documents</h5>
               </div>
-
               <div className="card-body">
                 <div className="row g-4">
                   {/* NID */}

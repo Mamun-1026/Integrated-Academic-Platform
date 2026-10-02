@@ -17,19 +17,63 @@ const AdmitCard = ({ studentData }) => {
 
     const studentId = String(studentData.userId).trim();
 
-    const loadData = () => {
-      const cards = JSON.parse(localStorage.getItem("admitCards") || "[]");
-      const students = JSON.parse(localStorage.getItem("students") || "[]");
+    const loadData = async () => {
+      let card = null;
+      let profile = null;
+      let enrolledCourses = [];
 
-      const card = cards.find((c) => String(c.studentId).trim() === studentId);
+      try {
+        // Fetch admit card from backend API
+        const resCard = await fetch(
+          `http://localhost:5000/api/admit-cards/${studentId}`,
+        );
+        const cardData = await resCard.json();
+        if (cardData && cardData.success !== false) {
+          card = cardData.card || cardData;
+        }
 
-      const profile = students.find(
-        (s) => String(s.studentId).trim() === studentId,
-      );
+        // Fetch student profile from backend API
+        const resStudent = await fetch(
+          `http://localhost:5000/api/students/${studentId}`,
+        );
+        const studentResult = await resStudent.json();
+        if (studentResult && studentResult.success !== false) {
+          profile = studentResult;
+        }
 
-      const enrolledCourses = JSON.parse(
-        localStorage.getItem("studentCourses_" + studentId) || "[]",
-      );
+        // Fetch enrolled courses from backend API
+        const resCourses = await fetch(
+          `http://localhost:5000/api/student-courses/${studentId}`,
+        );
+        const courseResult = await resCourses.json();
+        if (Array.isArray(courseResult)) {
+          enrolledCourses = courseResult;
+        }
+      } catch (err) {
+        console.error(
+          "Backend fetch error, falling back to localStorage:",
+          err,
+        );
+      }
+
+      // Fallback to localStorage if API data is missing
+      if (!card) {
+        const cards = JSON.parse(localStorage.getItem("admitCards") || "[]");
+        card = cards.find((c) => String(c.studentId).trim() === studentId);
+      }
+
+      if (!profile) {
+        const students = JSON.parse(localStorage.getItem("students") || "[]");
+        profile = students.find(
+          (s) => String(s.studentId).trim() === studentId,
+        );
+      }
+
+      if (enrolledCourses.length === 0) {
+        enrolledCourses = JSON.parse(
+          localStorage.getItem("studentCourses_" + studentId) || "[]",
+        );
+      }
 
       if (!card || !profile) {
         setMyCard(null);
@@ -143,7 +187,7 @@ const AdmitCard = ({ studentData }) => {
             <div className="col-6">
               <div className="info-box">
                 <small>Roll</small>
-                <h6>{myCard.roll}</h6>
+                <h6>{myCard.roll || "N/A"}</h6>
               </div>
             </div>
           </div>

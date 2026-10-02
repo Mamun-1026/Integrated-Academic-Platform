@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
   FaBookOpen,
@@ -20,58 +20,103 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
   const [results, setResults] = useState({});
   const [publishedCourses, setPublishedCourses] = useState({});
 
-  // LOAD DATA
+  // LOAD DATA FROM DB API & LOCALSTORAGE
   useEffect(() => {
     setCourses(assignedCourses || []);
 
-    const allStudents = JSON.parse(localStorage.getItem("students") || "[]");
-    setStudents(allStudents);
-
-    const initialResults = {};
-    const initialPublished = {};
-
-    assignedCourses?.forEach((c) => {
-      const courseResults = JSON.parse(
-        localStorage.getItem(`teacherResults_${teacherId}_${c.courseId}`) ||
-          "{}",
-      );
-
-      if (Object.keys(courseResults).length > 0) {
-        initialResults[c.courseId] = courseResults;
-        initialPublished[c.courseId] = {};
-        Object.keys(courseResults).forEach((sid) => {
-          initialPublished[c.courseId][sid] = true;
-        });
+    const loadStudentsAndResults = async () => {
+      let allStudents = [];
+      try {
+        const resStudents = await fetch("http://localhost:5000/api/students");
+        const dataStudents = await resStudents.json();
+        if (Array.isArray(dataStudents)) {
+          allStudents = dataStudents;
+        }
+      } catch (err) {
+        console.error("Error loading students from DB:", err);
       }
-    });
 
-    setResults(initialResults);
-    setPublishedCourses(initialPublished);
+      if (allStudents.length === 0) {
+        allStudents = JSON.parse(localStorage.getItem("students") || "[]");
+      }
+      setStudents(allStudents);
+
+      const initialResults = {};
+      const initialPublished = {};
+
+      if (assignedCourses && assignedCourses.length > 0) {
+        for (const c of assignedCourses) {
+          let courseResults = {};
+          try {
+            const resResults = await fetch(
+              `http://localhost:5000/api/results/${teacherId}/${c.courseId}`,
+            );
+            const dataResults = await resResults.json();
+            if (dataResults && typeof dataResults === "object") {
+              courseResults = dataResults;
+            }
+          } catch (err) {
+            console.error(
+              `Error loading results for course ${c.courseId}:`,
+              err,
+            );
+          }
+
+          if (Object.keys(courseResults).length === 0) {
+            courseResults = JSON.parse(
+              localStorage.getItem(
+                `teacherResults_${teacherId}_${c.courseId}`,
+              ) || "{}",
+            );
+          }
+
+          if (Object.keys(courseResults).length > 0) {
+            initialResults[c.courseId] = courseResults;
+            initialPublished[c.courseId] = {};
+            Object.keys(courseResults).forEach((sid) => {
+              initialPublished[c.courseId][sid] = true;
+            });
+          }
+        }
+      }
+
+      setResults(initialResults);
+      setPublishedCourses(initialPublished);
+    };
+
+    loadStudentsAndResults();
   }, [assignedCourses, teacherId]);
 
   // STUDENTS FILTER
   const getStudentsForCourse = (courseId) => {
     return students.filter((s) => {
       const studentCourses = JSON.parse(
-        localStorage.getItem(`studentCourses_${s.studentId}`) || "[]",
+        localStorage.getItem(`studentCourses_${s.studentId || s.userId}`) ||
+          "[]",
       );
-      return studentCourses.some((c) => c.courseId === courseId);
+      return studentCourses.some(
+        (c) => String(c.courseId) === String(courseId),
+      );
     });
   };
 
-  //  TOP 3 RANKING
+  // TOP 3 RANKING
   const getTop3 = (courseId) => {
-    const courseResults = results[courseId] || [];
+    const courseResults = results[courseId] || {};
 
     const ranking = Object.entries(courseResults)
       .map(([sid, r]) => {
         const student = students.find(
-          (s) => String(s.studentId) === String(sid),
+          (s) => String(s.studentId || s.userId) === String(sid),
         );
 
         return {
           studentId: sid,
-          name: student?.fullName || student?.name || "Unknown",
+          name:
+            student?.fullName ||
+            student?.name ||
+            student?.username ||
+            "Unknown",
           total: r.total || 0,
         };
       })
@@ -85,26 +130,30 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
   const handleAddOrEditResult = (courseId, studentId) => {
     const quiz = prompt(
       "Quiz Marks:",
-      results[courseId]?.[studentId]?.quiz || "",
+      results[courseId]?.[studentId]?.quiz ?? "",
     );
+    if (quiz === null) return;
+
     const midterm = prompt(
       "Midterm Marks:",
-      results[courseId]?.[studentId]?.midterm || "",
+      results[courseId]?.[studentId]?.midterm ?? "",
     );
+    if (midterm === null) return;
+
     const final = prompt(
       "Final Marks:",
-      results[courseId]?.[studentId]?.final || "",
+      results[courseId]?.[studentId]?.final ?? "",
     );
-
-    if (!quiz || !midterm || !final) return;
+    if (final === null) return;
 
     const updatedCourseResults = { ...(results[courseId] || {}) };
 
     updatedCourseResults[studentId] = {
-      quiz: Number(quiz),
-      midterm: Number(midterm),
-      final: Number(final),
-      total: Number(quiz) + Number(midterm) + Number(final),
+      quiz: Number(quiz) || 0,
+      midterm: Number(midterm) || 0,
+      final: Number(final) || 0,
+      total:
+        (Number(quiz) || 0) + (Number(midterm) || 0) + (Number(final) || 0),
     };
 
     setResults((prev) => ({
@@ -114,7 +163,7 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
   };
 
   // PUBLISH
-  const handlePublish = (courseId) => {
+  const handlePublish = async (courseId) => {
     const courseResults = results[courseId];
     if (!courseResults || Object.keys(courseResults).length === 0) {
       alert("No results to publish!");
@@ -133,7 +182,8 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
 
       history[courseId] = {
         courseName:
-          courses.find((c) => c.courseId === courseId)?.courseName || "",
+          courses.find((c) => String(c.courseId) === String(courseId))
+            ?.courseName || "",
         quiz: r.quiz,
         midterm: r.midterm,
         final: r.final,
@@ -157,7 +207,20 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
 
     setPublishedCourses(newPublished);
 
-    alert("Results published!");
+    try {
+      await fetch(
+        `http://localhost:5000/api/results/${teacherId}/${courseId}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ results: courseResults }),
+        },
+      );
+      alert("Results published and synced to Database!");
+    } catch (err) {
+      console.error("Database publish result sync error:", err);
+      alert("Results published locally!");
+    }
   };
 
   // ================= UI =================
@@ -205,11 +268,11 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
             {selectedCourse.courseName} Results
           </h4>
 
-          {/*  TOP 3 PODIUM */}
+          {/* TOP 3 PODIUM */}
           <div className="row text-center mb-4">
             {getTop3(selectedCourse.courseId).map((s, i) => {
               const colors = ["warning", "secondary", "dark"];
-              const medals = ["<FaMedal />", "<FaMedal />", "<IoIosMedal />"];
+              const medals = [<FaMedal />, <FaMedal />, <IoIosMedal />];
 
               return (
                 <div key={s.studentId} className="col-md-4">
@@ -242,36 +305,42 @@ const TeacherResult = ({ teacherId, assignedCourses }) => {
 
               <tbody>
                 {getStudentsForCourse(selectedCourse.courseId).map((s) => {
-                  const res =
-                    results[selectedCourse.courseId]?.[s.studentId] || {};
+                  const sId = s.studentId || s.userId;
+                  const res = results[selectedCourse.courseId]?.[sId] || {};
                   const isPublished =
-                    publishedCourses[selectedCourse.courseId]?.[s.studentId];
+                    publishedCourses[selectedCourse.courseId]?.[sId];
 
                   return (
-                    <tr key={s.studentId}>
-                      <td>{s.studentId}</td>
-                      <td>{s.fullName || s.name}</td>
-                      <td>{res.quiz || "-"}</td>
-                      <td>{res.midterm || "-"}</td>
-                      <td>{res.final || "-"}</td>
+                    <tr key={sId}>
+                      <td>{sId}</td>
+                      <td>{s.fullName || s.name || s.username}</td>
+                      <td>{res.quiz !== undefined ? res.quiz : "-"}</td>
+                      <td>{res.midterm !== undefined ? res.midterm : "-"}</td>
+                      <td>{res.final !== undefined ? res.final : "-"}</td>
                       <td className="fw-bold text-success">
-                        {res.total || "-"}
+                        {res.total !== undefined ? res.total : "-"}
                       </td>
 
                       <td>
                         {!isPublished ? (
                           <button
                             className={`btn btn-sm ${
-                              res.quiz ? "btn-warning" : "btn-success"
+                              res.quiz !== undefined
+                                ? "btn-warning"
+                                : "btn-success"
                             }`}
                             onClick={() =>
                               handleAddOrEditResult(
                                 selectedCourse.courseId,
-                                s.studentId,
+                                sId,
                               )
                             }
                           >
-                            {res.quiz ? <FaEdit /> : <FaPlusCircle />}
+                            {res.quiz !== undefined ? (
+                              <FaEdit />
+                            ) : (
+                              <FaPlusCircle />
+                            )}
                           </button>
                         ) : (
                           <span className="badge bg-success">

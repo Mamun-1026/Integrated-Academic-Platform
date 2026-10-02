@@ -24,7 +24,7 @@ const CreateStudent = ({
     section: "A",
   });
 
-  const handleCreateStudent = () => {
+  const handleCreateStudent = async () => {
     if (
       !studentFormData.name ||
       !studentFormData.studentId ||
@@ -33,12 +33,10 @@ const CreateStudent = ({
       alert("Fill all fields");
       return;
     }
-
     const exists = students.some(
       (s) =>
         s.studentId.toLowerCase() === studentFormData.studentId.toLowerCase(),
     );
-
     if (exists) {
       alert("Student ID already exists!");
       return;
@@ -46,11 +44,12 @@ const CreateStudent = ({
 
     const month = new Date().getMonth() + 1;
     const year = new Date().getFullYear();
-    let semesterName;
-
-    if (month >= 1 && month <= 4) semesterName = `Spring ${year}`;
-    else if (month >= 5 && month <= 8) semesterName = `Summer ${year}`;
-    else semesterName = `Fall ${year}`;
+    let semesterName =
+      month <= 4
+        ? `Spring ${year}`
+        : month <= 8
+          ? `Summer ${year}`
+          : `Fall ${year}`;
 
     const newStudent = {
       ...studentFormData,
@@ -58,22 +57,34 @@ const CreateStudent = ({
       semester: semesterName,
     };
 
-    const updated = [...students, newStudent];
-    localStorage.setItem("students", JSON.stringify(updated));
-    setStudents(updated);
-    setSelectedStudentId(studentFormData.studentId);
-    setActiveTab("infoStudent");
-
-    setStudentFormData({
-      name: "",
-      studentId: "",
-      password: "",
-      department: "CSE",
-      batch: "65",
-      section: "A",
-    });
-
-    alert(`Student Created! Semester: ${semesterName}`);
+    try {
+      const res = await fetch("http://localhost:5000/api/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newStudent),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updated = [...students, newStudent];
+        setStudents(updated);
+        setSelectedStudentId(studentFormData.studentId);
+        setActiveTab("infoStudent");
+        setStudentFormData({
+          name: "",
+          studentId: "",
+          password: "",
+          department: "CSE",
+          batch: "65",
+          section: "A",
+        });
+        alert(`Student Created & Saved to Database! Semester: ${semesterName}`);
+      } else {
+        alert("Failed to save student to database.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Database error! Check if server is running.");
+    }
   };
 
   return (

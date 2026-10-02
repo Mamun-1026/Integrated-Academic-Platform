@@ -15,13 +15,31 @@ const ApproveDropCourse = () => {
   const [students, setStudents] = useState([]);
 
   useEffect(() => {
-    const stored = JSON.parse(
-      localStorage.getItem("dropRequests_admin") || "[]",
-    );
-    setRequests(stored);
+    const loadData = async () => {
+      // Load drop requests from localStorage (or backend if mapped)
+      const stored = JSON.parse(
+        localStorage.getItem("dropRequests_admin") || "[]",
+      );
+      setRequests(stored);
 
-    const allStudents = JSON.parse(localStorage.getItem("students") || "[]");
-    setStudents(allStudents);
+      // Fetch students from MySQL Backend API
+      try {
+        const res = await fetch("http://localhost:5000/api/students");
+        const data = await res.json();
+        const normalized = (Array.isArray(data) ? data : []).map((s) => ({
+          ...s,
+          studentId: s.student_id || s.studentId,
+        }));
+        setStudents(normalized);
+      } catch (err) {
+        console.error("Error loading students:", err);
+        const allStudents = JSON.parse(
+          localStorage.getItem("students") || "[]",
+        );
+        setStudents(allStudents);
+      }
+    };
+    loadData();
   }, []);
 
   const getStudentInfo = (studentId) => {
@@ -35,7 +53,6 @@ const ApproveDropCourse = () => {
 
   const handleApprove = (reqIndex) => {
     const req = requests[reqIndex];
-
     const key = `studentCourses_${req.studentId}`;
     const courses = JSON.parse(localStorage.getItem(key) || "[]");
 
@@ -48,16 +65,15 @@ const ApproveDropCourse = () => {
     const updated = [...requests];
     updated[reqIndex].status = "approved";
     saveRequests(updated);
+    alert("Course drop approved successfully!");
   };
 
   const handleReject = (reqIndex) => {
     const req = requests[reqIndex];
-
     const key = `studentCourses_${req.studentId}`;
     const courses = JSON.parse(localStorage.getItem(key) || "[]");
 
     const exists = courses.find((c) => c.courseId === req.course.courseId);
-
     if (!exists) courses.push(req.course);
 
     localStorage.setItem(key, JSON.stringify(courses));
@@ -65,6 +81,7 @@ const ApproveDropCourse = () => {
     const updated = [...requests];
     updated[reqIndex].status = "rejected";
     saveRequests(updated);
+    alert("Course drop request rejected.");
   };
 
   const handleDelete = (reqIndex) => {
@@ -92,13 +109,13 @@ const ApproveDropCourse = () => {
 
   return (
     <div className="container py-4">
-      {/*  HEADER */}
+      {/* HEADER */}
       <div className="glass-header mb-4">
         <h3 className="fw-bold mb-1">Drop Course Approval</h3>
         <small>Review, approve or reject student requests</small>
       </div>
 
-      {/* 📊 STATS */}
+      {/* STATS */}
       <div className="row g-3 mb-4">
         <StatCard title="Total" value={stats.total} icon={<FaBook />} />
         <StatCard title="Pending" value={stats.pending} icon={<FaClock />} />
@@ -124,7 +141,7 @@ const ApproveDropCourse = () => {
                   }}
                 >
                   <div className="card-body d-flex flex-column">
-                    {/* 👤 TOP */}
+                    {/* TOP */}
                     <div className="d-flex justify-content-between mb-3">
                       <div>
                         <h6 className="fw-bold mb-1">
@@ -153,13 +170,13 @@ const ApproveDropCourse = () => {
                       </div>
                     </div>
 
-                    {/* 📅 DATE */}
+                    {/* DATE */}
                     <div className="mb-3 text-muted">
                       <FaCalendarAlt className="me-2" />
                       {r.date}
                     </div>
 
-                    {/*  ACTION */}
+                    {/* ACTION */}
                     <div className="mt-auto d-flex flex-column gap-2">
                       {r.status === "pending" && (
                         <div className="d-flex gap-2">
@@ -194,7 +211,7 @@ const ApproveDropCourse = () => {
         </div>
       )}
 
-      {/*  STYLES */}
+      {/* STYLES */}
       <style>{`
         .glass-header {
           padding: 20px;

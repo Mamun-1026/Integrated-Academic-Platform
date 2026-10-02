@@ -15,7 +15,7 @@ const TeacherDashboard = () => {
   const [selectedTab, setSelectedTab] = useState(
     localStorage.getItem("teacherSelectedTab") || "Home",
   );
-  // ✅ DARK MODE (default = LIGHT)
+  // DARK MODE (default = LIGHT)
   const [darkMode, setDarkMode] = useState(false);
 
   const teacher =
@@ -23,32 +23,60 @@ const TeacherDashboard = () => {
     JSON.parse(localStorage.getItem("teacherInfo")) ||
     {};
 
-  const teacherId = teacher.teacherId || localStorage.getItem("teacherId");
+  const teacherId =
+    teacher.teacherId ||
+    localStorage.getItem("teacherId") ||
+    localStorage.getItem("userId");
 
-  const teacherName = teacher.teacherName || teacher.name || "Teacher";
+  const teacherName =
+    teacher.teacherName || teacher.name || teacher.fullName || "Teacher";
   const [assignedCourses, setAssignedCourses] = useState([]);
 
   const teacherDesignation = teacher.designation || teacher.role || "Lecturer";
 
+  // LOAD ASSIGNED COURSES FROM DB API & LOCALSTORAGE
   useEffect(() => {
-    const courses =
-      JSON.parse(localStorage.getItem("teacherCourses_" + teacherId)) || [];
-    setAssignedCourses(courses);
+    if (!teacherId) return;
+
+    const loadAssignedCourses = async () => {
+      let courses = [];
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/teacher-courses/${teacherId}`,
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          courses = data;
+        }
+      } catch (err) {
+        console.error("Error loading teacher assigned courses from DB:", err);
+      }
+
+      if (courses.length === 0) {
+        courses = JSON.parse(
+          localStorage.getItem("teacherCourses_" + teacherId) || "[]",
+        );
+      }
+      setAssignedCourses(courses);
+    };
+
+    loadAssignedCourses();
   }, [teacherId]);
 
-  //theme load
+  // Theme load
   useEffect(() => {
     if (!teacherId) return;
 
     const saved = localStorage.getItem("teacherDarkMode_" + teacherId);
     if (saved === "true") setDarkMode(true);
   }, [teacherId]);
-  //Reload ar por same tab
+
+  // Reload ar por same tab
   useEffect(() => {
     localStorage.setItem("teacherSelectedTab", selectedTab);
   }, [selectedTab]);
 
-  //store or add
+  // Store or add theme class
   useEffect(() => {
     if (!teacherId) return;
 

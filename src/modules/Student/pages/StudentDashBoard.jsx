@@ -15,7 +15,7 @@ import PasswordChange from "../settings/PasswordChange";
 
 function StudentDashBoard() {
   const [selectedTab, setSelectedTab] = useState(
-    localStorage.getItem("teacherSelectedTab") || "Home",
+    localStorage.getItem("studentSelectedTab") || "Home",
   );
   const [studentData, setStudentData] = useState({
     username: "",
@@ -23,23 +23,45 @@ function StudentDashBoard() {
     semester: "",
   });
 
-  //  GLOBAL THEME STATE
+  // GLOBAL THEME STATE
   const [darkMode, setDarkMode] = useState(false);
 
-  // Load student data
+  // Load student data from DB API & LocalStorage
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username") || "";
-    const storedUserId = localStorage.getItem("userId") || "";
-    const studentInfo = JSON.parse(
-      localStorage.getItem("studentInfo_" + storedUserId) || "{}",
-    );
-    const semester = studentInfo.semester || "Spring";
+    const loadStudentDashData = async () => {
+      const storedUsername = localStorage.getItem("username") || "";
+      const storedUserId = localStorage.getItem("userId") || "";
+      let semester = "Spring";
 
-    setStudentData({
-      username: storedUsername,
-      userId: storedUserId,
-      semester,
-    });
+      if (storedUserId) {
+        try {
+          const res = await fetch(
+            `http://localhost:5000/api/students/${storedUserId}`,
+          );
+          const data = await res.json();
+          if (data && data.success !== false) {
+            semester = data.semester || semester;
+          }
+        } catch (err) {
+          console.error("Error loading student dash data from DB:", err);
+        }
+      }
+
+      if (semester === "Spring" && storedUserId) {
+        const studentInfo = JSON.parse(
+          localStorage.getItem("studentInfo_" + storedUserId) || "{}",
+        );
+        semester = studentInfo.semester || "Spring";
+      }
+
+      setStudentData({
+        username: storedUsername,
+        userId: storedUserId,
+        semester,
+      });
+    };
+
+    loadStudentDashData();
   }, []);
 
   // Load theme
@@ -51,9 +73,9 @@ function StudentDashBoard() {
     setDarkMode(saved === "true");
   }, [studentData.userId]);
 
-  //Reload ar por same tab
+  // Reload ar por same tab (Fixed key name from teacherSelectedTab to studentSelectedTab)
   useEffect(() => {
-    localStorage.setItem("teacherSelectedTab", selectedTab);
+    localStorage.setItem("studentSelectedTab", selectedTab);
   }, [selectedTab]);
 
   const renderPage = () => {

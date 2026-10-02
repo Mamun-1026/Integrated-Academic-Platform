@@ -6,27 +6,46 @@ const TeacherProfile = ({ teacherId }) => {
   const [profileImage, setProfileImage] = useState("");
   const [showModal, setShowModal] = useState(false);
 
-  //  document preview modal
+  // document preview modal
   const [docPreview, setDocPreview] = useState(null);
 
   useEffect(() => {
-    const id = teacherId || localStorage.getItem("teacherId");
+    const id =
+      teacherId ||
+      localStorage.getItem("teacherId") ||
+      localStorage.getItem("userId");
     if (!id) return;
 
-    const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
+    const loadTeacherProfile = async () => {
+      let found = null;
+      try {
+        const res = await fetch(`http://localhost:5000/api/teachers/${id}`);
+        const data = await res.json();
+        if (data && data.success !== false) {
+          found = data;
+        }
+      } catch (err) {
+        console.error("Error loading teacher profile from DB:", err);
+      }
 
-    const found = teachers.find(
-      (t) => String(t.teacherId).trim() === String(id).trim(),
-    );
+      if (!found || Object.keys(found).length === 0) {
+        const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
+        found = teachers.find(
+          (t) => String(t.teacherId).trim() === String(id).trim(),
+        );
+      }
 
-    setInfo(found || {});
+      setInfo(found || {});
 
-    const img =
-      (found && found.profilePhoto) ||
-      localStorage.getItem("profileImage_" + id) ||
-      "";
+      const img =
+        (found && found.profilePhoto) ||
+        localStorage.getItem("profileImage_" + id) ||
+        "";
 
-    setProfileImage(img || "/defaultFace.webp");
+      setProfileImage(img || "/defaultFace.webp");
+    };
+
+    loadTeacherProfile();
   }, [teacherId]);
 
   const handleImageChange = (e) => {
@@ -34,11 +53,14 @@ const TeacherProfile = ({ teacherId }) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       const imageData = reader.result;
       setProfileImage(imageData);
 
-      const id = teacherId || localStorage.getItem("teacherId");
+      const id =
+        teacherId ||
+        localStorage.getItem("teacherId") ||
+        localStorage.getItem("userId");
       if (!id) return;
 
       const updated = {
@@ -53,6 +75,16 @@ const TeacherProfile = ({ teacherId }) => {
       localStorage.setItem("profileImage_" + id, imageData);
 
       window.dispatchEvent(new Event("profileUpdate"));
+
+      try {
+        await fetch(`http://localhost:5000/api/teachers/${id}/image`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profilePhoto: imageData }),
+        });
+      } catch (err) {
+        console.error("Database teacher image sync error:", err);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -140,7 +172,7 @@ const TeacherProfile = ({ teacherId }) => {
               />
 
               <h4 className="fw-bold mt-3">
-                {info.fullName || "Teacher Name"}
+                {info.fullName || info.name || "Teacher Name"}
               </h4>
 
               <p className="text-muted mb-2">
@@ -207,7 +239,11 @@ const TeacherProfile = ({ teacherId }) => {
 
         {/* SECTIONS */}
         <Section title="Personal Information" color="#1e3c72">
-          <Item label="Full Name" value={info.fullName} color="#1e3c72" />
+          <Item
+            label="Full Name"
+            value={info.fullName || info.name}
+            color="#1e3c72"
+          />
           <Item label="Teacher ID" value={info.teacherId} color="#ef4444" />
           <Item label="Email" value={info.email} color="#22c55e" />
           <Item label="Mobile" value={info.mobile} color="#06b6d4" />

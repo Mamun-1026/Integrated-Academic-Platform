@@ -21,35 +21,85 @@ const TeacherChangePassword = ({ darkMode }) => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     setError("");
 
-    const teacherId = localStorage.getItem("teacherId");
-    const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
+    const teacherId =
+      localStorage.getItem("teacherId") || localStorage.getItem("userId");
+    if (!teacherId) {
+      return setError("Teacher session not found. Please log in again.");
+    }
 
-    const currentTeacher = teachers.find((t) => t.teacherId === teacherId);
-
-    if (!currentTeacher) return setError("Teacher not found");
-    if (currentTeacher.password !== oldPassword)
-      return setError("Old password incorrect");
     if (newPassword.length < 6)
       return setError("Password must be at least 6 characters");
     if (newPassword !== confirmPassword)
       return setError("Passwords do not match");
 
-    const updated = teachers.map((t) =>
-      t.teacherId === teacherId
-        ? { ...t, password: newPassword, previousPassword: t.password }
-        : t,
-    );
+    try {
+      // Send request to Backend API for teacher password change
+      const res = await fetch(
+        `http://localhost:5000/api/auth/change-teacher-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teacherId,
+            oldPassword,
+            newPassword,
+          }),
+        },
+      );
 
-    localStorage.setItem("teachers", JSON.stringify(updated));
+      const data = await res.json();
 
-    setSuccess(true);
-    setOldPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setTimeout(() => setSuccess(false), 3000);
+      if (!res.ok || data.success === false) {
+        return setError(data.message || "Failed to update password");
+      }
+
+      // Also update localStorage backup if present
+      const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
+      const updated = teachers.map((t) =>
+        String(t.teacherId) === String(teacherId)
+          ? { ...t, password: newPassword, previousPassword: t.password }
+          : t,
+      );
+      localStorage.setItem("teachers", JSON.stringify(updated));
+
+      setSuccess(true);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error(
+        "Database teacher password change error, falling back to local check:",
+        err,
+      );
+
+      // Fallback logic if server is offline
+      const teachers = JSON.parse(localStorage.getItem("teachers") || "[]");
+      const currentTeacher = teachers.find(
+        (t) => String(t.teacherId) === String(teacherId),
+      );
+
+      if (!currentTeacher) return setError("Teacher not found");
+      if (currentTeacher.password !== oldPassword)
+        return setError("Old password incorrect");
+
+      const updated = teachers.map((t) =>
+        String(t.teacherId) === String(teacherId)
+          ? { ...t, password: newPassword, previousPassword: t.password }
+          : t,
+      );
+
+      localStorage.setItem("teachers", JSON.stringify(updated));
+
+      setSuccess(true);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setSuccess(false), 3000);
+    }
   };
 
   const strength =
@@ -69,7 +119,7 @@ const TeacherChangePassword = ({ darkMode }) => {
   return (
     <div className="container-fluid py-4">
       <div className="row g-4">
-        {/* LEFT PANEL (same style as student) */}
+        {/* LEFT PANEL */}
         <div className="col-lg-4">
           <div className="p-4 rounded-4 shadow-sm h-100 bg-dark text-white">
             <FaUserShield size={28} className="mb-3 text-info" />

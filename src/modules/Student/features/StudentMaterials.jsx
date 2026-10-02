@@ -22,28 +22,68 @@ const StudentMaterials = ({ studentId }) => {
 
   const [previewFile, setPreviewFile] = useState(null);
 
-  /* ================= LOAD COURSES ================= */
+  /* ================= LOAD COURSES FROM DB & LOCALSTORAGE ================= */
   useEffect(() => {
-    const enrolled =
-      JSON.parse(localStorage.getItem("studentCourses_" + studentId)) || [];
-    setCourses(enrolled);
+    if (!studentId) return;
+
+    const loadStudentCourses = async () => {
+      let enrolled = [];
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/student-courses/${studentId}`,
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          enrolled = data;
+        }
+      } catch (err) {
+        console.error("Error loading student courses:", err);
+      }
+
+      if (enrolled.length === 0) {
+        enrolled = JSON.parse(
+          localStorage.getItem("studentCourses_" + studentId) || "[]",
+        );
+      }
+      setCourses(enrolled);
+    };
+
+    loadStudentCourses();
   }, [studentId]);
 
-  /* ================= LOAD MATERIALS ================= */
+  /* ================= LOAD MATERIALS FROM DB & LOCALSTORAGE ================= */
   useEffect(() => {
     if (!selectedCourse) return;
 
-    const all = JSON.parse(localStorage.getItem("allMaterials") || "[]");
+    const loadMaterials = async () => {
+      let filtered = [];
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/materials/${selectedCourse.courseId}`,
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          filtered = data;
+        }
+      } catch (err) {
+        console.error("Error loading materials from DB:", err);
+      }
 
-    const filtered = all.filter(
-      (m) => String(m.courseId) === String(selectedCourse.courseId),
-    );
+      if (filtered.length === 0) {
+        const all = JSON.parse(localStorage.getItem("allMaterials") || "[]");
+        filtered = all.filter(
+          (m) => String(m.courseId) === String(selectedCourse.courseId),
+        );
+      }
 
-    setMaterials(filtered);
+      setMaterials(filtered);
+    };
+
+    loadMaterials();
   }, [selectedCourse]);
 
   /* ================= COMMENT ================= */
-  const addComment = (materialId) => {
+  const addComment = async (materialId) => {
     const text = commentText[materialId];
     if (!text) return;
 
@@ -57,16 +97,30 @@ const StudentMaterials = ({ studentId }) => {
       createdAt: new Date().toLocaleString(),
     };
 
+    const updatedComments = [newComment, ...old];
     localStorage.setItem(
       "comments_" + materialId,
-      JSON.stringify([newComment, ...old]),
+      JSON.stringify(updatedComments),
     );
 
     setCommentText({ ...commentText, [materialId]: "" });
+
+    try {
+      await fetch(
+        `http://localhost:5000/api/materials/${materialId}/comments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newComment),
+        },
+      );
+    } catch (err) {
+      console.error("Database comment sync error:", err);
+    }
   };
 
   /* ================= EDIT COMMENT ================= */
-  const saveEdit = (materialId, commentId) => {
+  const saveEdit = async (materialId, commentId) => {
     const data =
       JSON.parse(localStorage.getItem("comments_" + materialId)) || [];
 
@@ -78,6 +132,19 @@ const StudentMaterials = ({ studentId }) => {
 
     setEditId(null);
     setEditText("");
+
+    try {
+      await fetch(
+        `http://localhost:5000/api/materials/${materialId}/comments/${commentId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: editText }),
+        },
+      );
+    } catch (err) {
+      console.error("Database comment edit sync error:", err);
+    }
   };
 
   /* ================= PDF CHECK ================= */
@@ -145,8 +212,9 @@ const StudentMaterials = ({ studentId }) => {
         </div>
       ) : (
         materials.map((m) => {
-          const comments =
-            JSON.parse(localStorage.getItem("comments_" + m.id)) || [];
+          const comments = JSON.parse(
+            localStorage.getItem("comments_" + m.id) || "[]",
+          );
 
           return (
             <div key={m.id} className="card shadow-sm mb-3 border-0">

@@ -6,32 +6,39 @@ const AdminLeaveManagement = () => {
   const [teachers, setTeachers] = useState([]);
   const [filter, setFilter] = useState("All");
 
-  // ---------------- SAFE LOAD ----------------
+  // Load teachers and leaves from Database API
   useEffect(() => {
-    let teacherData = [];
+    const loadData = async () => {
+      try {
+        const teacherRes = await fetch("http://localhost:5000/api/teachers");
+        const teacherData = await teacherRes.json();
+        const normalizedTeachers = (
+          Array.isArray(teacherData) ? teacherData : []
+        ).map((t) => ({
+          ...t,
+          teacherId: t.teacher_id || t.teacherId,
+          fullName: t.full_name || t.fullName,
+        }));
+        setTeachers(normalizedTeachers);
 
-    try {
-      teacherData = JSON.parse(localStorage.getItem("teachers")) || [];
-    } catch {
-      teacherData = [];
-    }
-
-    setTeachers(teacherData);
-
-    let allLeaves = [];
-
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith("teacherLeaves_")) {
-        try {
-          const data = JSON.parse(localStorage.getItem(key)) || [];
-          allLeaves = [...allLeaves, ...data];
-        } catch {
-          // ignore bad data
-        }
+        // Fetch all leaves from localStorage / database fallback
+        let allLeaves = [];
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith("teacherLeaves_")) {
+            try {
+              const data = JSON.parse(localStorage.getItem(key)) || [];
+              allLeaves = [...allLeaves, ...data];
+            } catch {
+              // ignore bad data
+            }
+          }
+        });
+        setLeaves(allLeaves);
+      } catch (err) {
+        console.error("Error loading leave management data:", err);
       }
-    });
-
-    setLeaves(allLeaves);
+    };
+    loadData();
   }, []);
 
   // ---------------- TEACHER INFO ----------------
@@ -76,6 +83,7 @@ const AdminLeaveManagement = () => {
     Object.entries(grouped).forEach(([key, value]) => {
       localStorage.setItem(key, JSON.stringify(value));
     });
+    alert(`Leave request ${status}!`);
   };
 
   // ---------------- FILTER ----------------

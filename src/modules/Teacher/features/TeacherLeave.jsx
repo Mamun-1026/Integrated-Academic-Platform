@@ -22,16 +22,36 @@ const TeacherLeave = ({ teacherId }) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // LOAD LEAVES
+  // LOAD LEAVES FROM DB API & LOCALSTORAGE
   useEffect(() => {
     if (!teacherId) return;
 
-    const data =
-      JSON.parse(localStorage.getItem("teacherLeaves_" + teacherId)) || [];
-    setLeaves(data);
+    const loadLeaves = async () => {
+      let data = [];
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/leaves/${teacherId}`,
+        );
+        const apiData = await res.json();
+        if (Array.isArray(apiData)) {
+          data = apiData;
+        }
+      } catch (err) {
+        console.error("Error loading teacher leaves from DB:", err);
+      }
+
+      if (data.length === 0) {
+        data = JSON.parse(
+          localStorage.getItem("teacherLeaves_" + teacherId) || "[]",
+        );
+      }
+      setLeaves(data);
+    };
+
+    loadLeaves();
   }, [teacherId]);
 
-  // 🔥 SINGLE SOURCE OF TRUTH (FIX)
+  // SINGLE SOURCE OF TRUTH
   const allTeachers = JSON.parse(localStorage.getItem("teachers") || "[]");
 
   const teacher =
@@ -63,7 +83,7 @@ const TeacherLeave = ({ teacherId }) => {
   };
 
   // APPLY LEAVE
-  const handleApplyLeave = () => {
+  const handleApplyLeave = async () => {
     const { reason, from, to } = form;
 
     if (!reason || !from || !to) {
@@ -81,12 +101,13 @@ const TeacherLeave = ({ teacherId }) => {
     const newLeave = {
       id: Date.now(),
       teacherId: String(teacherId),
-
-      //  SNAPSHOT (IMPORTANT)
-      teacherName: teacher.teacherName || teacher.name || "Unknown Teacher",
+      teacherName:
+        teacher.teacherName ||
+        teacher.name ||
+        teacher.fullName ||
+        "Unknown Teacher",
       department: teacher.department || "N/A",
       designation: teacher.designation || "Lecturer",
-
       reason,
       from,
       to,
@@ -100,18 +121,36 @@ const TeacherLeave = ({ teacherId }) => {
 
     localStorage.setItem("teacherLeaves_" + teacherId, JSON.stringify(updated));
 
+    try {
+      await fetch("http://localhost:5000/api/leaves", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newLeave),
+      });
+    } catch (err) {
+      console.error("Database leave application sync error:", err);
+    }
+
     setForm({ reason: "", from: "", to: "" });
     setSuccess("Leave request submitted successfully!");
   };
 
   // DELETE (only pending)
-  const handleDelete = (id, status) => {
+  const handleDelete = async (id, status) => {
     if (status !== "Pending") return;
 
     const updated = leaves.filter((l) => l.id !== id);
     setLeaves(updated);
 
     localStorage.setItem("teacherLeaves_" + teacherId, JSON.stringify(updated));
+
+    try {
+      await fetch(`http://localhost:5000/api/leaves/${id}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Database leave delete sync error:", err);
+    }
   };
 
   // FILTER

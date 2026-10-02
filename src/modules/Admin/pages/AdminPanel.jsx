@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 import {
   FaUserPlus,
   FaUserGraduate,
@@ -54,8 +53,6 @@ const AdminPanel = () => {
   const [totalIncome, setTotalIncome] = useState(0);
 
   const [showDeptStudents, setShowDeptStudents] = useState(false);
-  // Add this state at the top of AdminPanel
-
   const [selectedDept, setSelectedDept] = useState("All");
 
   const [approvedPayments, setApprovedPayments] = useState([]);
@@ -65,7 +62,6 @@ const AdminPanel = () => {
   const [assignedCourses, setAssignedCourses] = useState([]);
 
   const [routines, setRoutines] = useState([]);
-
   const [notices, setNotices] = useState([]);
 
   const [courseFormData, setCourseFormData] = useState({
@@ -80,34 +76,60 @@ const AdminPanel = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    // Dashboard-specific states reset when tab changes
     if (activeTab !== "dashboard") {
       setShowDeptStudents(false);
       setSelectedDept("All");
     }
   }, [activeTab]);
 
+  // Load data from MySQL Backend API instead of purely localStorage
   useEffect(() => {
-    // Load data from localStorage
-    const storedStudents = JSON.parse(localStorage.getItem("students") || "[]");
+    const fetchData = async () => {
+      try {
+        const studentRes = await fetch("http://localhost:5000/api/students");
+        const studentData = await studentRes.json();
+        const normalizedStudents = (
+          Array.isArray(studentData) ? studentData : []
+        ).map((s) => ({
+          ...s,
+          studentId: s.student_id || s.studentId,
+          department: s.department || "CSE",
+          batch: s.batch || "65",
+          section: s.section || "A",
+        }));
+        setStudents(normalizedStudents);
 
-    const normalizedStudents = storedStudents.map((s) => ({
-      ...s,
-      department: s.department || "CSE",
-      batch: s.batch || "65",
-      section: s.section || "A",
-    }));
+        const teacherRes = await fetch("http://localhost:5000/api/teachers");
+        const teacherData = await teacherRes.json();
+        const normalizedTeachers = (
+          Array.isArray(teacherData) ? teacherData : []
+        ).map((t) => ({
+          ...t,
+          teacherId: t.teacher_id || t.teacherId,
+          fullName: t.full_name || t.fullName,
+        }));
+        setTeachers(normalizedTeachers);
 
-    setStudents(normalizedStudents);
+        const courseRes = await fetch("http://localhost:5000/api/courses");
+        const courseData = await courseRes.json();
+        const normalizedCourses = (
+          Array.isArray(courseData) ? courseData : []
+        ).map((c) => ({
+          ...c,
+          courseId: c.course_id || c.courseId,
+          courseName: c.course_name || c.courseName,
+        }));
+        setCourses(normalizedCourses);
 
-    const storedTeachers = JSON.parse(localStorage.getItem("teachers") || "[]");
-    setTeachers(storedTeachers);
+        const noticeRes = await fetch("http://localhost:5000/api/notices");
+        const noticeData = await noticeRes.json();
+        setNotices(Array.isArray(noticeData) ? noticeData : []);
+      } catch (err) {
+        console.error("Error fetching data from database:", err);
+      }
+    };
 
-    const storedCourses = JSON.parse(localStorage.getItem("courses") || "[]");
-    setCourses(storedCourses);
-
-    const storedNotices = JSON.parse(localStorage.getItem("notices") || "[]");
-    setNotices(storedNotices);
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -138,13 +160,11 @@ const AdminPanel = () => {
   }, []);
 
   useEffect(() => {
-    const allStudents = JSON.parse(localStorage.getItem("students") || "[]");
-
     let pending = [];
     let income = 0;
     let approved = [];
 
-    allStudents.forEach((s) => {
+    students.forEach((s) => {
       const bills = JSON.parse(
         localStorage.getItem("billHistory_" + s.studentId) || "[]",
       );
@@ -154,8 +174,8 @@ const AdminPanel = () => {
           bill.paymentHistory.forEach((p, index) => {
             if (p.status === "Pending") {
               pending.push({
-                studentId: s.studentId, //  fix
-                studentName: s.name,
+                studentId: s.studentId,
+                studentName: s.name || s.fullName,
                 billName: p.billName,
                 method: p.method,
                 transactionId: p.trxId,
@@ -171,7 +191,7 @@ const AdminPanel = () => {
 
               approved.push({
                 studentId: s.studentId,
-                studentName: s.name,
+                studentName: s.name || s.fullName,
                 billName: p.billName,
                 method: p.method,
                 transactionId: p.trxId,
@@ -188,11 +208,11 @@ const AdminPanel = () => {
     setTotalIncome(income);
     setApprovedPayments(approved);
   }, [students]);
+
   const ASSIGNED_KEY = "assignedCourses_global";
 
   const handleAssignCourse = (teacherId, course) => {
     const global = JSON.parse(localStorage.getItem(ASSIGNED_KEY) || "[]");
-
     const exists = global.find((a) => a.courseId === course.courseId);
 
     if (exists) {
@@ -211,7 +231,6 @@ const AdminPanel = () => {
 
     localStorage.setItem(ASSIGNED_KEY, JSON.stringify(updated));
 
-    // IMPORTANT FIX: force sync
     setTimeout(() => {
       window.dispatchEvent(new Event("profileUpdate"));
     }, 0);
@@ -237,23 +256,19 @@ const AdminPanel = () => {
     alert("Course Removed!");
   };
 
-  // --- Remove functions ---
   const handleRemoveStudent = (studentId) => {
     if (!window.confirm("Are you sure?")) return;
     const updated = students.filter((s) => s.studentId !== studentId);
-    localStorage.setItem("students", JSON.stringify(updated));
     setStudents(updated);
-
     localStorage.removeItem("studentInfo_" + studentId);
     localStorage.removeItem("profileImage_" + studentId);
-    localStorage.removeItem("assignedCourses_" + studentId); // remove assigned courses
+    localStorage.removeItem("assignedCourses_" + studentId);
     alert("Removed!");
   };
 
   const handleRemoveTeacher = (teacherId) => {
     if (!window.confirm("Are you sure?")) return;
     const updated = teachers.filter((t) => t.teacherId !== teacherId);
-    localStorage.setItem("teachers", JSON.stringify(updated));
     setTeachers(updated);
     localStorage.removeItem("teacherInfo_" + teacherId);
     alert("Removed!");
@@ -262,12 +277,9 @@ const AdminPanel = () => {
   const handleRemoveCourse = (courseId) => {
     if (!window.confirm("Are you sure?")) return;
     const updated = courses.filter((c) => c.courseId !== courseId);
-    localStorage.setItem("courses", JSON.stringify(updated));
     setCourses(updated);
     alert("Course Removed!");
   };
-
-  // --- Search / Filter ---
 
   const filteredCourses = courses.filter(
     (c) =>
@@ -275,7 +287,6 @@ const AdminPanel = () => {
       c.courseId.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // --- Highlight Helper ---
   const highlightText = (text, highlight) => {
     if (!highlight) return text;
     const regex = new RegExp(`(${highlight})`, "gi");
@@ -330,7 +341,6 @@ const AdminPanel = () => {
         return s;
       });
       setStudents(updatedStudents);
-      localStorage.setItem("students", JSON.stringify(updatedStudents));
 
       bill.paid = (bill.paid || 0) + payment.amount;
       bill.due = (bill.due || 0) - payment.amount;
@@ -354,11 +364,11 @@ const AdminPanel = () => {
       ),
     );
   };
+
   const handleRejectPayment = (studentId, billIndex, paymentIndex) => {
     const bills = JSON.parse(
       localStorage.getItem("billHistory_" + studentId) || "[]",
     );
-
     let updatedBills = [...bills];
 
     const bill = updatedBills[billIndex];
@@ -394,7 +404,6 @@ const AdminPanel = () => {
     };
 
     loadRoutines();
-
     window.addEventListener("storage", loadRoutines);
     return () => window.removeEventListener("storage", loadRoutines);
   }, []);
@@ -406,7 +415,6 @@ const AdminPanel = () => {
         {/* Tabs */}
         <div className="card shadow-sm border-0 p-3 mb-4">
           <div className="d-flex flex-wrap gap-2">
-            {/* DASHBOARD FIRST (MAIN VIEW) */}
             <button
               className="btn btn-info d-flex align-items-center gap-2"
               onClick={() => setActiveTab("dashboard")}
@@ -414,7 +422,6 @@ const AdminPanel = () => {
               <FaTachometerAlt /> Dashboard
             </button>
 
-            {/* STUDENT SECTION */}
             <button
               className="btn btn-success d-flex align-items-center gap-2"
               onClick={() => setActiveTab("createStudent")}
@@ -432,7 +439,6 @@ const AdminPanel = () => {
               <FaUserGraduate /> Student Info
             </button>
 
-            {/* TEACHER SECTION */}
             <button
               className="btn btn-success d-flex align-items-center gap-2"
               onClick={() => setActiveTab("createTeacher")}
@@ -450,7 +456,6 @@ const AdminPanel = () => {
               <FaUserGraduate /> Teacher Info
             </button>
 
-            {/* COURSE MANAGEMENT */}
             <button
               className="btn btn-success d-flex align-items-center gap-2"
               onClick={() => setActiveTab("createCourse")}
@@ -465,7 +470,6 @@ const AdminPanel = () => {
               <FaTasks /> Assign Course
             </button>
 
-            {/* ACADEMIC TOOLS */}
             <button
               className="btn btn-primary d-flex align-items-center gap-2"
               onClick={() => setActiveTab("createRoutine")}
@@ -480,7 +484,6 @@ const AdminPanel = () => {
               <FaIdCard /> Admit Card
             </button>
 
-            {/* NOTICE / COMMUNICATION */}
             <button
               className="btn btn-danger d-flex align-items-center gap-2"
               onClick={() => setActiveTab("createNotice")}
@@ -488,7 +491,6 @@ const AdminPanel = () => {
               <FaBullhorn /> Notice
             </button>
 
-            {/* FINANCE */}
             <button
               className="btn btn-warning d-flex align-items-center gap-2"
               onClick={() => setActiveTab("pendingPayments")}
@@ -496,7 +498,6 @@ const AdminPanel = () => {
               <FaMoneyCheckAlt /> Pending Payments
             </button>
 
-            {/* SYSTEM */}
             <button
               className="btn btn-secondary d-flex align-items-center gap-2"
               onClick={() => setActiveTab("history")}
@@ -520,7 +521,6 @@ const AdminPanel = () => {
           </div>
         </div>
 
-        {/* CREATE COURSE */}
         {activeTab === "createCourse" && (
           <CreateCourse
             courses={courses}
@@ -538,7 +538,6 @@ const AdminPanel = () => {
           />
         )}
 
-        {/* CREATE TEACHER FORM */}
         {activeTab === "createTeacher" && (
           <CreateTeacher
             teachers={teachers}
@@ -547,14 +546,13 @@ const AdminPanel = () => {
             setActiveTab={setActiveTab}
           />
         )}
-        {/* STUDENT INFO */}
+
         {activeTab === "infoStudent" && (
           <div className="card p-4 mb-4">
             <StudentInformationForm studentId={selectedStudentId} />
           </div>
         )}
 
-        {/* TEACHER INFO */}
         {activeTab === "infoTeacher" && (
           <div className="card p-4 mb-4">
             <TeacherInformationForm
@@ -572,6 +570,7 @@ const AdminPanel = () => {
             />
           </div>
         )}
+
         {activeTab === "createNotice" && <AdminNotice />}
         {activeTab === "leaveManagement" && <AdminLeaveManagement />}
 
@@ -582,14 +581,17 @@ const AdminPanel = () => {
             setRoutines={setRoutines}
           />
         )}
+
         {activeTab === "admitCard" && (
           <AdminAdmitCardManager students={students} />
         )}
+
         {activeTab === "history" && (
           <History
             students={students}
             teachers={teachers}
             searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
             highlightText={highlightText}
             openAbout={openAbout}
             openUpdate={openUpdate}
@@ -630,8 +632,9 @@ const AdminPanel = () => {
           handleRemoveAssignedCourse={handleRemoveAssignedCourse}
         />
       )}
+
       {activeTab === "approveDrop" && <ApproveDropCourse students={students} />}
-      {/* ABOUT MODAL */}
+
       {showAboutModal && (
         <AboutModal
           selectedType={selectedType}
@@ -640,6 +643,7 @@ const AdminPanel = () => {
           setStudents={setStudents}
         />
       )}
+
       {showUpdateModal && (
         <UpdateModal
           selectedType={selectedType}
@@ -652,4 +656,5 @@ const AdminPanel = () => {
     </div>
   );
 };
+
 export default AdminPanel;

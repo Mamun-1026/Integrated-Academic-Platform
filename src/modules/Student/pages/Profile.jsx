@@ -12,21 +12,39 @@ const Profile = () => {
 
     setStudentId(userId);
 
-    const data = JSON.parse(
-      localStorage.getItem("studentInfo_" + userId) || "{}",
-    );
-    setInfo(data || {});
+    const loadProfileData = async () => {
+      let profileData = {};
+      try {
+        const res = await fetch(`http://localhost:5000/api/students/${userId}`);
+        const data = await res.json();
+        if (data && data.success !== false) {
+          profileData = data;
+        }
+      } catch (err) {
+        console.error("Error fetching profile from DB:", err);
+      }
 
-    const img = localStorage.getItem("profileImage_" + userId);
-    setProfileImage(img || "/defaultFace.webp");
+      if (Object.keys(profileData).length === 0) {
+        profileData = JSON.parse(
+          localStorage.getItem("studentInfo_" + userId) || "{}",
+        );
+      }
+      setInfo(profileData || {});
+
+      const img = localStorage.getItem("profileImage_" + userId);
+      setProfileImage(img || "/defaultFace.webp");
+    };
+
+    loadProfileData();
   }, []);
+
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader(); // ✅ FIXED (this was missing)
+    const reader = new FileReader();
 
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const imageData = event.target.result;
 
       setProfileImage(imageData);
@@ -35,11 +53,22 @@ const Profile = () => {
       if (userId) {
         localStorage.setItem("profileImage_" + userId, imageData);
         window.dispatchEvent(new Event("profileUpdate"));
+
+        try {
+          await fetch(`http://localhost:5000/api/students/${userId}/image`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profileImage: imageData }),
+          });
+        } catch (err) {
+          console.error("Database image sync error:", err);
+        }
       }
     };
 
     reader.readAsDataURL(file);
   };
+
   const Item = ({ label, value, color }) => (
     <div className="col-md-6 col-lg-4 mb-3">
       <div
@@ -110,8 +139,10 @@ const Profile = () => {
               />
 
               <h4 className="fw-bold mt-3 text-dark">
-                {info.firstName
-                  ? `${info.firstName} ${info.lastName}`
+                {info.firstName || info.name || info.fullName
+                  ? `${info.firstName || ""} ${info.lastName || ""}`.trim() ||
+                    info.name ||
+                    info.fullName
                   : "Student Name"}
               </h4>
 

@@ -17,15 +17,33 @@ const BillHistory = ({ studentData }) => {
   const [bills, setBills] = useState([]);
 
   useEffect(() => {
-    const billData = JSON.parse(
-      localStorage.getItem(`billHistory_${userId}`) || "[]",
-    );
-    setBills(billData);
+    const loadBills = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/bills/${userId}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setBills(data);
+          return;
+        }
+      } catch (err) {
+        console.error("Error fetching bills from DB:", err);
+      }
+
+      // Fallback to localStorage
+      const billData = JSON.parse(
+        localStorage.getItem(`billHistory_${userId}`) || "[]",
+      );
+      setBills(billData);
+    };
+
+    if (userId) {
+      loadBills();
+    }
   }, [userId]);
 
   const handlePrint = () => window.print();
 
-  const handlePay = (index) => {
+  const handlePay = async (index) => {
     const method = prompt("Enter payment method");
     if (!method) return;
 
@@ -56,6 +74,18 @@ const BillHistory = ({ studentData }) => {
 
     setBills(updatedBills);
     localStorage.setItem(`billHistory_${userId}`, JSON.stringify(updatedBills));
+
+    try {
+      await fetch(`http://localhost:5000/api/bills/${userId}/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ billIndex: index, payment }),
+      });
+      alert("Payment submitted successfully and pending approval!");
+    } catch (err) {
+      console.error("Database payment sync error:", err);
+      alert("Payment submitted locally (Database sync pending)!");
+    }
   };
 
   const handlePDF = async (id) => {
@@ -142,9 +172,11 @@ const BillHistory = ({ studentData }) => {
                       {bill.courses.map((c, i) => (
                         <tr key={i}>
                           <td>{c.courseId}</td>
-                          <td>{c.name}</td>
+                          <td>{c.name || c.courseName}</td>
                           <td>{c.credit}</td>
-                          <td className="fw-bold text-primary">{c.amount}</td>
+                          <td className="fw-bold text-primary">
+                            {c.amount || c.fee}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -227,8 +259,8 @@ const BillHistory = ({ studentData }) => {
                       <tr key={i}>
                         <td>{p.date}</td>
                         <td className="text-uppercase">{p.method}</td>
-                        <td>{p.trxId}</td>
-                        <td>{p.amount}</td>
+                        <td>{p.trxId || p.transactionId}</td>
+                        <td>{p.amount || p.amountPaid}</td>
                         <td>
                           {p.status === "Pending" && (
                             <span className="badge bg-warning text-dark d-flex align-items-center justify-content-center gap-1">

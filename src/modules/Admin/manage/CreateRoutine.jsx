@@ -18,7 +18,7 @@ const CreateRoutine = ({ routines, setRoutines }) => {
       .toLowerCase()
       .replace(/\s+/g, "");
 
-  // HUMAN DAY FORMAT (optional improvement)
+  // HUMAN DAY FORMAT
   const formatDay = (v) => {
     const d = clean(v);
     if (d === "sunday") return "Sunday";
@@ -52,26 +52,20 @@ const CreateRoutine = ({ routines, setRoutines }) => {
     reader.readAsArrayBuffer(uploadedFile);
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!preview.length) {
       alert("No data found in file");
       return;
     }
 
     const newRoutines = preview.map((item) => ({
-      id: Date.now() + Math.random(),
-
       department: clean(item.department),
       batch: clean(item.batch),
       section: clean(item.section),
-
-      // IMPORTANT FIX
       day: formatDay(item.day),
       time: String(item.time).trim(),
       room: String(item.room || "").trim(),
-
       courseName: String(item.courseName || "").trim(),
-      // courseId: clean(item.courseId),
       courseId: clean(
         item.courseId ||
           item.courseID ||
@@ -80,30 +74,46 @@ const CreateRoutine = ({ routines, setRoutines }) => {
           item["course id"] ||
           item["CourseId"],
       ),
-      createdAt: new Date().toISOString(),
     }));
 
-    // REMOVE DUPLICATES BEFORE SAVE
-    //const merged = [...routines, ...newRoutines];
-    const existing = JSON.parse(localStorage.getItem("routines") || "[]");
+    try {
+      // Send each routine item to the backend database API
+      let successCount = 0;
+      for (const r of newRoutines) {
+        const res = await fetch("http://localhost:5000/api/routines", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(r),
+        });
+        const data = await res.json();
+        if (data.success) {
+          successCount++;
+        }
+      }
 
-    const merged = [...existing, ...newRoutines];
+      const merged = [...routines, ...newRoutines];
+      const unique = Array.from(
+        new Map(
+          merged.map((r) => [
+            `${clean(r.department)}-${clean(r.batch)}-${clean(r.section)}-${clean(r.day)}-${clean(r.time)}-${clean(r.courseId)}`,
+            r,
+          ]),
+        ).values(),
+      );
 
-    const unique = Array.from(
-      new Map(
-        merged.map((r) => [
-          `${clean(r.department)}-${clean(r.batch)}-${clean(r.section)}-${clean(r.day)}-${clean(r.time)}-${clean(r.courseId)}`,
-          r,
-        ]),
-      ).values(),
-    );
-    setRoutines(unique);
-    localStorage.setItem("routines", JSON.stringify(unique));
+      setRoutines(unique);
+      localStorage.setItem("routines", JSON.stringify(unique));
 
-    alert(` ${newRoutines.length} routines uploaded successfully!`);
+      alert(
+        `${successCount} routines successfully uploaded and saved to Database!`,
+      );
 
-    setFile(null);
-    setPreview([]);
+      setFile(null);
+      setPreview([]);
+    } catch (err) {
+      console.error(err);
+      alert("Database sync error! Check if server is running.");
+    }
   };
 
   return (

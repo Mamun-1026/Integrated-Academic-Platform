@@ -1,11 +1,14 @@
 import { useNavigate } from "react-router-dom";
 
 const AdminHeader = () => {
-  const navigate = useNavigate(); //  define navigate here
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
-    navigate("/"); // now it will go to the login page
+    localStorage.removeItem("username");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("role");
+    navigate("/");
   };
 
   return (
@@ -16,6 +19,7 @@ const AdminHeader = () => {
         color: "white",
         display: "flex",
         justifyContent: "space-between",
+        alignItems: "center",
       }}
     >
       <h4 style={{ margin: "auto 0" }}>Admin Panel</h4>

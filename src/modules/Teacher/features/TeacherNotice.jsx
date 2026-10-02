@@ -21,13 +21,33 @@ const TeacherNotice = ({
   const [message, setMessage] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  // LOAD COURSE NOTICE
+  // LOAD COURSE NOTICE FROM DB API & LOCALSTORAGE
   useEffect(() => {
     if (!selectedCourse || !teacherId) return;
 
-    const key = `teacherCourseNotices_${teacherId}_${selectedCourse.courseId}`;
-    const stored = JSON.parse(localStorage.getItem(key) || "[]");
-    setNotices(stored);
+    const loadNotices = async () => {
+      let stored = [];
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/notices/${selectedCourse.courseId}`,
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          stored = data;
+        }
+      } catch (err) {
+        console.error("Error loading teacher notices from DB:", err);
+      }
+
+      if (stored.length === 0) {
+        const key = `teacherCourseNotices_${teacherId}_${selectedCourse.courseId}`;
+        stored = JSON.parse(localStorage.getItem(key) || "[]");
+      }
+
+      setNotices(stored);
+    };
+
+    loadNotices();
   }, [selectedCourse, teacherId]);
 
   // SAVE
@@ -40,7 +60,7 @@ const TeacherNotice = ({
   };
 
   // ADD NOTICE
-  const handleAddNotice = () => {
+  const handleAddNotice = async () => {
     if (!message.trim() || !selectedCourse) return;
 
     const newNotice = {
@@ -49,7 +69,7 @@ const TeacherNotice = ({
       message,
       createdAt: new Date().toISOString(),
 
-      senderType: "teacher", // MUST
+      senderType: "teacher",
       senderName: teacherName || "Teacher",
       teacherName: teacherName || "Teacher",
       designation: teacherDesignation || "Lecturer",
@@ -59,13 +79,12 @@ const TeacherNotice = ({
       courseName: selectedCourse.courseName,
     };
 
-    // Local (course ভিত্তিক)
+    // Local
     const updated = [newNotice, ...notices];
     saveNotices(updated);
 
-    // Global (Admin + Student এর জন্য)
+    // Global
     const existing = localStorage.getItem("notices");
-
     let global = [];
 
     try {
@@ -75,15 +94,24 @@ const TeacherNotice = ({
     }
 
     const updatedGlobal = [newNotice, ...global];
-
     localStorage.setItem("notices", JSON.stringify(updatedGlobal));
+
+    try {
+      await fetch("http://localhost:5000/api/notices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newNotice),
+      });
+    } catch (err) {
+      console.error("Database notice publish sync error:", err);
+    }
 
     setMessage("");
     setShowForm(false);
   };
 
   // DELETE
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const updated = notices.filter((n) => n.id !== id);
     saveNotices(updated);
 
@@ -92,6 +120,14 @@ const TeacherNotice = ({
       "notices",
       JSON.stringify(global.filter((n) => n.id !== id)),
     );
+
+    try {
+      await fetch(`http://localhost:5000/api/notices/${id}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Database notice delete sync error:", err);
+    }
   };
 
   return (
@@ -205,14 +241,14 @@ const TeacherNotice = ({
 
                       <p className="mb-1">
                         <FaUserTie className="me-1 text-success" />
-                        {n.senderName}
+                        {n.senderName || n.teacherName}
                       </p>
 
                       <p className="mb-1 text-muted small">{n.designation}</p>
 
                       <p className="text-muted small">
                         <FaClock className="me-1" />
-                        {n.createdAt}
+                        {n.createdAt || n.date}
                       </p>
 
                       <button

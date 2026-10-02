@@ -23,7 +23,7 @@ const CreateTeacher = ({
     phone: "",
   });
 
-  const handleCreateTeacher = () => {
+  const handleCreateTeacher = async () => {
     if (
       !teacherFormData.fullName ||
       !teacherFormData.teacherId ||
@@ -32,12 +32,10 @@ const CreateTeacher = ({
       alert("Fill all fields");
       return;
     }
-
     const exists = teachers.some(
       (t) =>
         t.teacherId.toLowerCase() === teacherFormData.teacherId.toLowerCase(),
     );
-
     if (exists) {
       alert("Teacher ID already exists!");
       return;
@@ -48,32 +46,39 @@ const CreateTeacher = ({
       createdAt: new Date().toLocaleString(),
     };
 
-    const updated = [...teachers, newTeacher];
-    localStorage.setItem("teachers", JSON.stringify(updated));
-    setTeachers(updated);
-
-    localStorage.setItem(
-      "teacherInfo_" + teacherFormData.teacherId,
-      JSON.stringify({
-        ...teacherFormData,
-        createdAt: new Date().toLocaleString(),
-      }),
-    );
-
-    setSelectedTeacherId(teacherFormData.teacherId);
-    setActiveTab("infoTeacher");
-
-    setTeacherFormData({
-      fullName: "",
-      teacherId: "",
-      password: "",
-      designation: "",
-      department: "",
-      email: "",
-      phone: "",
-    });
-
-    alert("Teacher Created!");
+    try {
+      const res = await fetch("http://localhost:5000/api/teachers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTeacher),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updated = [...teachers, newTeacher];
+        setTeachers(updated);
+        localStorage.setItem(
+          "teacherInfo_" + teacherFormData.teacherId,
+          JSON.stringify(newTeacher),
+        );
+        setSelectedTeacherId(teacherFormData.teacherId);
+        setActiveTab("infoTeacher");
+        setTeacherFormData({
+          fullName: "",
+          teacherId: "",
+          password: "",
+          designation: "",
+          department: "",
+          email: "",
+          phone: "",
+        });
+        alert("Teacher Created & Saved to Database!");
+      } else {
+        alert("Failed to save teacher to database.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Database error! Check if server is running.");
+    }
   };
 
   const handleChange = (e) => {
